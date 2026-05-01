@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Construction Management System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-page">
+
+  <div class="login-hero">
+    <span class="logo-icon">🏗️</span>
+    <h1>Construction Management System</h1>
+    <p>PTW • TBM • Safety • QAQC • Defect Management</p>
+  </div>
+
+  <div class="hazard-stripe-thick"></div>
+
+  <div class="login-container">
+    <div class="login-card">
+      <h2>🔐 Sign In</h2>
+
+      <div class="form-group">
+        <label>Username <span class="required">*</span></label>
+        <input type="text" id="loginUsername" placeholder="Enter your username" autocomplete="username">
+      </div>
+
+      <div class="form-group">
+        <label>Password <span class="required">*</span></label>
+        <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password">
+      </div>
+
+      <button class="btn btn-primary btn-block" onclick="handleLogin()" id="loginBtn">
+        Sign In →
+      </button>
+
+      <div class="section-divider" style="margin: 24px 0 16px">
+        <span>Demo Accounts</span>
+      </div>
+
+      <div class="demo-accounts" style="font-size:0.8rem; color: var(--text-light);">
+        <table style="width:100%; font-size:0.78rem;">
+          <tr style="border-bottom:1px solid var(--border-light)">
+            <td style="padding:6px"><strong>supervisor</strong></td>
+            <td style="padding:6px">pass123</td>
+            <td style="padding:6px"><span class="badge badge-submitted" style="font-size:0.65rem">Supervisor</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border-light)">
+            <td style="padding:6px"><strong>pic</strong></td>
+            <td style="padding:6px">pass123</td>
+            <td style="padding:6px"><span class="badge badge-pending" style="font-size:0.65rem">PIC</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border-light)">
+            <td style="padding:6px"><strong>safety</strong></td>
+            <td style="padding:6px">pass123</td>
+            <td style="padding:6px"><span class="badge badge-approved" style="font-size:0.65rem">Safety</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border-light)">
+            <td style="padding:6px"><strong>pm</strong></td>
+            <td style="padding:6px">pass123</td>
+            <td style="padding:6px"><span class="badge badge-rectified" style="font-size:0.65rem">PM</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border-light)">
+            <td style="padding:6px"><strong>qaqc</strong></td>
+            <td style="padding:6px">pass123</td>
+            <td style="padding:6px"><span class="badge badge-minor" style="font-size:0.65rem">QAQC</span></td>
+          </tr>
+          <tr>
+            <td style="padding:6px"><strong>admin</strong></td>
+            <td style="padding:6px">admin123</td>
+            <td style="padding:6px"><span class="badge badge-critical" style="font-size:0.65rem">Admin</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    // ── Demo Users (stored in Google Sheet "USERS" tab later) ──
+    // For now, these work offline. Once n8n is connected, it
+    // validates against the USERS sheet instead.
+    const DEMO_USERS = [
+      { username: "supervisor", password: "pass123", name: "Ahmad Supervisor", email: "supervisor@cms.com", role: "SUPERVISOR" },
+      { username: "pic",        password: "pass123", name: "Budi PIC",         email: "pic@cms.com",        role: "PIC" },
+      { username: "safety",     password: "pass123", name: "Chong Safety",     email: "safety@cms.com",     role: "SAFETY" },
+      { username: "pm",         password: "pass123", name: "Diana PM",         email: "pm@cms.com",         role: "PM" },
+      { username: "qaqc",       password: "pass123", name: "Erik QAQC",        email: "qaqc@cms.com",       role: "QAQC" },
+      { username: "admin",      password: "admin123",name: "System Admin",     email: "admin@cms.com",      role: "ADMIN" },
+    ];
+
+    // Check if already logged in
+    const existing = localStorage.getItem("cms_user");
+    if (existing) {
+      window.location.href = "dashboard.html";
+    }
+
+    // Handle Enter key
+    document.getElementById("loginPassword").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleLogin();
+    });
+
+    async function handleLogin() {
+      const username = document.getElementById("loginUsername").value.trim().toLowerCase();
+      const password = document.getElementById("loginPassword").value;
+
+      if (!username || !password) {
+        showToast("Please enter username and password", "error");
+        return;
+      }
+
+      const btn = document.getElementById("loginBtn");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Signing in...';
+
+      // Try Google Apps Script backend
+      let user = null;
+      try {
+        const resp = await fetch(CONFIG.GAS_URL, {
+          method: "POST",
+          body: JSON.stringify({ path: "cms-login", username, password })
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data && data.success) {
+            user = data.user;
+          }
+        }
+      } catch (e) {
+        console.log("GAS not reachable, using demo accounts");
+      }
+
+      // Fallback to demo accounts
+      if (!user) {
+        const found = DEMO_USERS.find(u => u.username === username && u.password === password);
+        if (found) {
+          user = {
+            name: found.name,
+            email: found.email,
+            role: found.role,
+            username: found.username
+          };
+        }
+      }
+
+      if (user) {
+        localStorage.setItem("cms_user", JSON.stringify(user));
+        showToast(`Welcome, ${user.name}!`);
+        setTimeout(() => {
+          window.location.href = "dashboard.html";
+        }, 800);
+      } else {
+        showToast("Invalid username or password", "error");
+        btn.disabled = false;
+        btn.innerHTML = "Sign In →";
+      }
+    }
+
+    // Simple toast for login page
+    function showToast(msg, type = "success") {
+      let c = document.querySelector(".toast-container");
+      if (!c) { c = document.createElement("div"); c.className = "toast-container"; document.body.appendChild(c); }
+      const t = document.createElement("div");
+      t.className = `toast ${type}`;
+      t.innerHTML = `<span>${type === "error" ? "❌" : "✅"}</span> ${msg}`;
+      c.appendChild(t);
+      setTimeout(() => { t.style.opacity = "0"; setTimeout(() => t.remove(), 300); }, 3000);
+    }
+  </script>
+</body>
+</html>

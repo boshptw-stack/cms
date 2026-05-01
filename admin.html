@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Checklist Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand"><span class="icon">🏗️</span> CMS</div>
+    <button class="nav-toggle">☰</button>
+    <div class="navbar-links">
+        <a href="dashboard.html">📊 Dashboard</a>
+        <div class="nav-dropdown" id="ddSafety">
+          <button class="nav-dropdown-btn" onclick="toggleDropdown('ddSafety')">🛡️ HSE Safety ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="ptw.html">📋 Permit to Work (PTW)</a>
+            <a href="tbm.html">🔧 Toolbox Meeting (TBM)</a>
+            <a href="safety.html">🛡️ Safety Inspection</a>
+          </div>
+        </div>
+        <div class="nav-dropdown" id="ddQuality">
+          <button class="nav-dropdown-btn" onclick="toggleDropdown('ddQuality')">🔍 Quality ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="qaqc.html">🔍 Quality Inspection</a>
+            <a href="defect.html">🐛 Defect Management</a>
+          </div>
+        </div>
+        <a href="admin.html">⚙️ Admin</a>
+      </div>
+    <div class="navbar-user"></div>
+  </nav>
+  <div class="hazard-stripe"></div>
+
+  <div class="page-container">
+    <div class="page-header">
+      <h1>⚙️ Superadmin — Checklist Manager</h1>
+      <p>Add or remove dropdown values without editing code</p>
+    </div>
+
+    <div class="admin-layout">
+      <!-- Sidebar -->
+      <div class="admin-sidebar">
+        <h4 style="padding:8px 16px;color:var(--text-light);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em">Categories</h4>
+        <div class="sidebar-item active" onclick="selectCategory('WORK_TYPE', this)">🔨 Work Type</div>
+        <div class="sidebar-item" onclick="selectCategory('RISK_LEVEL', this)">⚠️ Risk Level</div>
+        <div class="sidebar-item" onclick="selectCategory('TYPE_OF_FINDING', this)">🔎 Type of Finding</div>
+        <div class="sidebar-item" onclick="selectCategory('SEVERITY', this)">🔴 Severity</div>
+        <div class="sidebar-item" onclick="selectCategory('PPE', this)">🦺 PPE</div>
+        <div class="sidebar-item" onclick="selectCategory('PRIORITY', this)">📊 Priority</div>
+        <div class="sidebar-item" onclick="selectCategory('SAFETY_CHECKLIST', this)">✅ Safety Checklist</div>
+      </div>
+
+      <!-- Main Content -->
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <h3 id="categoryTitle">🔨 Work Type</h3>
+            <span class="badge badge-submitted" id="categoryBadge">WORK_TYPE</span>
+          </div>
+
+          <!-- Add New -->
+          <div class="d-flex gap-sm mb-lg">
+            <input type="text" id="newValue" placeholder="Enter new value..." style="flex:1">
+            <button class="btn btn-primary" onclick="addValue()">➕ Add</button>
+          </div>
+
+          <!-- Values List -->
+          <div id="valuesList"></div>
+        </div>
+
+        <!-- User Management -->
+        <div class="card mt-lg">
+          <div class="card-header">
+            <h3>👥 User Accounts</h3>
+          </div>
+          <div class="d-flex gap-sm mb-md">
+            <input type="text" id="newUsername" placeholder="Username" style="flex:1">
+            <input type="password" id="newPassword" placeholder="Password" style="flex:1">
+            <input type="text" id="newName" placeholder="Full Name" style="flex:1">
+            <input type="email" id="newEmail" placeholder="Email" style="flex:1">
+            <select id="newRole" style="flex:1">
+              <option value="">Role</option>
+              <option value="SUPERVISOR">Supervisor</option>
+              <option value="PIC">PIC</option>
+              <option value="SAFETY">Safety</option>
+              <option value="PM">PM</option>
+              <option value="QAQC">QAQC</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+            <button class="btn btn-primary" onclick="addUser()">➕</button>
+          </div>
+          <div class="table-wrap">
+            <table id="usersTable"></table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    const user = requireRole(["ADMIN"]);
+    let currentCategory = "WORK_TYPE";
+
+    if (user) {
+      setupNavbar("admin.html");
+      loadCategory("WORK_TYPE");
+      loadUsers();
+    }
+
+    function selectCategory(category, el) {
+      currentCategory = category;
+      document.querySelectorAll(".sidebar-item").forEach(s => s.classList.remove("active"));
+      el.classList.add("active");
+
+      const icons = {
+        WORK_TYPE: "🔨", RISK_LEVEL: "⚠️", TYPE_OF_FINDING: "🔎",
+        SEVERITY: "🔴", PPE: "🦺", PRIORITY: "📊", SAFETY_CHECKLIST: "✅"
+      };
+      document.getElementById("categoryTitle").textContent = `${icons[category] || ""} ${category.replace(/_/g, " ")}`;
+      document.getElementById("categoryBadge").textContent = category;
+      loadCategory(category);
+    }
+
+    async function loadCategory(category) {
+      let items = [];
+      try {
+        const resp = await apiGet(ENDPOINTS.CHECKLIST_LIST, { category });
+        if (resp && resp.data) items = resp.data;
+      } catch (e) {
+        // Fallback
+        if (DEFAULT_CHECKLISTS[category]) {
+          items = DEFAULT_CHECKLISTS[category].map((v, i) => ({
+            id: i + 1, value: v, category, active: true, createdBy: "default"
+          }));
+        }
+      }
+
+      const container = document.getElementById("valuesList");
+      if (items.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>No values in this category</p></div>';
+        return;
+      }
+
+      container.innerHTML = items.map(item => {
+        const val = item.value || item.Value;
+        const active = item.active !== false && item.Active !== "FALSE";
+        return `
+          <div class="d-flex justify-between items-center" style="padding:12px 16px;border-bottom:1px solid var(--border-light);${!active ? 'opacity:0.4;text-decoration:line-through' : ''}">
+            <div>
+              <strong>${val}</strong>
+              <span class="text-small text-muted" style="margin-left:8px">by ${item.createdBy || item.CreatedBy || "-"}</span>
+            </div>
+            ${active ? `<button class="btn btn-sm btn-danger" onclick="deleteValue('${val}')">🗑️</button>` : '<span class="text-small text-muted">Deleted</span>'}
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function addValue() {
+      const input = document.getElementById("newValue");
+      const value = input.value.trim();
+      if (!value) { showToast("Enter a value", "error"); return; }
+
+      showLoading("Adding...");
+      const resp = await apiPost(ENDPOINTS.CHECKLIST_ADD, {
+        category: currentCategory,
+        value: value,
+        createdBy: user.name
+      });
+      hideLoading();
+
+      if (resp) {
+        showToast(`"${value}" added to ${currentCategory}`);
+        input.value = "";
+        loadCategory(currentCategory);
+      }
+    }
+
+    async function deleteValue(value) {
+      if (!confirm(`Delete "${value}" from ${currentCategory}?`)) return;
+
+      showLoading("Deleting...");
+      const resp = await apiPost(ENDPOINTS.CHECKLIST_DELETE, {
+        category: currentCategory,
+        value: value,
+        deletedBy: user.name
+      });
+      hideLoading();
+
+      if (resp) {
+        showToast(`"${value}" deleted (soft delete)`, "warning");
+        loadCategory(currentCategory);
+      }
+    }
+
+    // ── User Management ───────────────────────────────────
+    async function loadUsers() {
+      let users = [];
+      try {
+        const resp = await apiGet(ENDPOINTS.LOGIN, { action: "list" });
+        if (resp && resp.data) users = resp.data;
+      } catch (e) {
+        users = [
+          { username: "supervisor", name: "Ahmad Supervisor", email: "supervisor@cms.com", role: "SUPERVISOR" },
+          { username: "pic", name: "Budi PIC", email: "pic@cms.com", role: "PIC" },
+          { username: "safety", name: "Chong Safety", email: "safety@cms.com", role: "SAFETY" },
+          { username: "pm", name: "Diana PM", email: "pm@cms.com", role: "PM" },
+          { username: "qaqc", name: "Erik QAQC", email: "qaqc@cms.com", role: "QAQC" },
+          { username: "admin", name: "System Admin", email: "admin@cms.com", role: "ADMIN" },
+        ];
+      }
+
+      const headers = ["Username", "Name", "Email", "Role"];
+      const rows = users.map(u => [
+        `<span class="mono">${u.username || u.Username}</span>`,
+        u.name || u.Name,
+        u.email || u.Email,
+        getBadgeHTML(u.role || u.Role)
+      ]);
+      renderTable("usersTable", headers, rows);
+    }
+
+    async function addUser() {
+      const username = document.getElementById("newUsername").value.trim();
+      const password = document.getElementById("newPassword").value;
+      const name = document.getElementById("newName").value.trim();
+      const email = document.getElementById("newEmail").value.trim();
+      const role = document.getElementById("newRole").value;
+
+      if (!username || !password || !name || !role) {
+        showToast("Fill all required fields", "error");
+        return;
+      }
+
+      showLoading("Adding user...");
+      const resp = await apiPost(ENDPOINTS.LOGIN, {
+        action: "addUser",
+        username, password, name, email, role
+      });
+      hideLoading();
+
+      if (resp) {
+        showToast(`User "${username}" added!`);
+        document.getElementById("newUsername").value = "";
+        document.getElementById("newPassword").value = "";
+        document.getElementById("newName").value = "";
+        document.getElementById("newEmail").value = "";
+        document.getElementById("newRole").value = "";
+        loadUsers();
+      }
+    }
+  </script>
+</body>
+</html>

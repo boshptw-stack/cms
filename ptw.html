@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PTW — Permit to Work</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .worker-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .worker-row input { flex: 1; }
+    .worker-row button { min-width: 36px; min-height: 36px; }
+    .checklist-grid { display: grid; gap: 0; margin-top: 8px; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+    .checklist-item { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; background: white; border-bottom: 1px solid var(--border-light); font-size: 0.85rem; line-height: 1.4; }
+    .checklist-item:nth-child(even) { background: var(--bg); }
+    .checklist-item:last-child { border-bottom: none; }
+    .checklist-item .cl-num { min-width: 28px; font-weight: 700; color: var(--navy); font-family: var(--font-mono); font-size: 0.8rem; padding-top: 2px; }
+    .checklist-item .cl-text { flex: 1; }
+    .checklist-item .cl-options { display: flex; gap: 4px; flex-shrink: 0; }
+    .cl-opt { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .cl-opt input[type="radio"] { width: 18px; height: 18px; accent-color: var(--yellow); cursor: pointer; margin: 0; }
+    .cl-opt span { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); }
+    .cl-other-input { margin-top: 6px; width: 100%; padding: 6px 10px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.8rem; font-family: var(--font-ui); display: none; }
+    .cl-other-input.show { display: block; }
+    .checklist-header { display: flex; justify-content: flex-end; padding: 8px 12px; background: var(--navy); color: white; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; gap: 4px; border-radius: var(--radius-md) var(--radius-md) 0 0; }
+    .checklist-header .ch-label { width: 40px; text-align: center; }
+    .stage-timeline { display: flex; gap: 0; margin: 16px 0; overflow-x: auto; }
+    .stage-step { flex: 1; text-align: center; padding: 10px 8px; font-size: 0.75rem; font-weight: 600; position: relative; background: var(--bg); border: 1px solid var(--border); min-width: 100px; }
+    .stage-step.done { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+    .stage-step.active { background: var(--yellow-light); border-color: var(--yellow); color: var(--navy); }
+    .stage-step.rejected { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+    .stage-step:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+    .stage-step:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+    .stage-step .stage-name { display: block; }
+    .stage-step .stage-info { display: block; font-size: 0.65rem; font-weight: 400; margin-top: 2px; opacity: 0.7; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand"><span class="icon">🏗️</span> CMS</div>
+    <button class="nav-toggle">☰</button>
+    <div class="navbar-links">
+        <a href="dashboard.html">📊 Dashboard</a>
+        <div class="nav-dropdown" id="ddSafety">
+          <button class="nav-dropdown-btn" onclick="toggleDropdown('ddSafety')">🛡️ HSE Safety ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="ptw.html">📋 Permit to Work (PTW)</a>
+            <a href="tbm.html">🔧 Toolbox Meeting (TBM)</a>
+            <a href="safety.html">🛡️ Safety Inspection</a>
+          </div>
+        </div>
+        <div class="nav-dropdown" id="ddQuality">
+          <button class="nav-dropdown-btn" onclick="toggleDropdown('ddQuality')">🔍 Quality ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="qaqc.html">🔍 Quality Inspection</a>
+            <a href="defect.html">🐛 Defect Management</a>
+          </div>
+        </div>
+        <a href="admin.html">⚙️ Admin</a>
+      </div>
+    <div class="navbar-user"></div>
+  </nav>
+  <div class="hazard-stripe"></div>
+
+  <div class="page-container">
+    <div class="page-header">
+      <h1>📋 Permit to Work (PTW)</h1>
+      <p>Submit and manage work permits — Supervisor → PIC → EHS → PM approval</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab-register">📂 PTW Register</button>
+      <button class="tab-btn hidden" data-tab="tab-submit" id="tabSubmitBtn">➕ New PTW</button>
+    </div>
+
+    <!-- ═══ TAB: Register (shown first for all) ═══ -->
+    <div class="tab-content" id="tab-submit">
+      <div class="card">
+        <h3>Submit New Permit to Work</h3>
+        <div class="hazard-stripe" style="margin:16px 0"></div>
+
+        <!-- Company & Project -->
+        <div class="section-divider"><span>Company & Project</span></div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Company <span class="required">*</span></label>
+            <input type="text" id="ptwCompany" placeholder="e.g. Bosh Engineering Pte. Ltd.">
+          </div>
+          <div class="form-group">
+            <label>Project <span class="required">*</span></label>
+            <select id="ptwProject">
+              <option value="">-- Select Project --</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Work Type & Location -->
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Work Type <span class="required">*</span></label>
+            <select id="ptwType" onchange="loadChecklist()">
+              <option value="">-- Loading... --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Location <span class="required">*</span></label>
+            <input type="text" id="ptwLocation" placeholder="e.g. L1, Block A">
+          </div>
+        </div>
+
+        <!-- PTW ID Preview -->
+        <div class="form-group">
+          <label>PTW ID (auto-generated)</label>
+          <input type="text" id="ptwId" readonly class="mono" style="background:var(--bg)" placeholder="Select project & type first">
+        </div>
+
+        <!-- Validity -->
+        <div class="section-divider"><span>Validity Period</span></div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Valid From <span class="required">*</span></label>
+            <input type="datetime-local" id="ptwStart">
+          </div>
+          <div class="form-group">
+            <label>Valid To <span class="required">*</span></label>
+            <input type="datetime-local" id="ptwEnd">
+          </div>
+        </div>
+
+        <!-- Contact & Description -->
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Contact Number <span class="required">*</span></label>
+            <input type="tel" id="ptwContact" placeholder="e.g. 91234567">
+          </div>
+          <div class="form-group">
+            <label>Equipment / Tools</label>
+            <input type="text" id="ptwEquipment" placeholder="e.g. Basic Tools, Crane">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Work Description <span class="required">*</span></label>
+          <textarea id="ptwDescription" placeholder="Describe the work to be carried out..."></textarea>
+        </div>
+
+        <!-- Workers -->
+        <div class="section-divider"><span>Workers</span></div>
+        <div id="workersList">
+          <div class="worker-row">
+            <input type="text" class="worker-name" placeholder="Worker name">
+            <input type="text" class="worker-trade" placeholder="Trade (e.g. GW, ELC)" style="max-width:150px">
+            <button class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">✕</button>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-outline mt-sm" onclick="addWorkerRow()">➕ Add Worker</button>
+
+        <!-- Safety Checklist (changes by type) -->
+        <div class="section-divider"><span>Safety Checklist</span></div>
+        <div id="checklistContainer">
+          <div class="empty-state" style="padding:16px">
+            <p class="text-muted">Select a <strong>Work Type</strong> above to load the checklist</p>
+          </div>
+        </div>
+
+        <!-- Photos -->
+        <div class="section-divider"><span>📸 Site Photos</span></div>
+        <div class="photo-upload-area" onclick="document.getElementById('ptwPhotos').click()">
+          <div class="upload-icon">📷</div>
+          <p>Upload site photos (max 20)</p>
+          <input type="file" id="ptwPhotos" accept="image/*" multiple hidden>
+        </div>
+        <div class="photo-preview-grid" id="ptwPhotosPreview"></div>
+
+        <!-- Assign PIC (Supervisor selects) -->
+        <div class="section-divider"><span>Assign Approver</span></div>
+        <div style="background:var(--blue-bg);border:1px solid var(--blue);border-radius:var(--radius-md);padding:12px;margin-bottom:16px;font-size:0.85rem;color:var(--blue)">
+          ℹ️ <strong>Approval Flow:</strong> You (Supervisor) submit → PIC approves → EHS approves → PM approves
+        </div>
+        <div class="form-group">
+          <label>Assign to PIC (Person In Charge) <span class="required">*</span></label>
+          <select id="ptwPIC"><option value="">-- Select PIC --</option></select>
+        </div>
+
+        <div class="hazard-stripe" style="margin:24px 0"></div>
+
+        <button class="btn btn-primary btn-block" onclick="submitPTW()" id="submitBtn">
+          📋 Submit PTW for Approval
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══ TAB: Register (default view) ═══ -->
+    <div class="tab-content active" id="tab-register">
+      <div class="card" style="padding:var(--space-sm)">
+        <div class="d-flex justify-between items-center flex-wrap gap-sm" style="padding:var(--space-md)">
+          <h3>PTW Register</h3>
+          <div class="d-flex gap-sm flex-wrap">
+            <select id="filterProject" onchange="loadPTWList()" style="min-height:36px;font-size:0.8rem;padding:4px 12px">
+              <option value="">All Projects</option>
+            </select>
+            <select id="filterType" onchange="loadPTWList()" style="min-height:36px;font-size:0.8rem;padding:4px 12px">
+              <option value="">All Types</option>
+              <option value="GEN">GEN</option>
+              <option value="HW">HW</option>
+              <option value="WAH">WAH</option>
+              <option value="CS">CS</option>
+              <option value="LW">LW</option>
+              <option value="EXC">EXC</option>
+            </select>
+            <select id="filterStatus" onchange="loadPTWList()" style="min-height:36px;font-size:0.8rem;padding:4px 12px">
+              <option value="">All Status</option>
+              <option value="pending_pic">Pending PIC</option>
+              <option value="pending_ehs">Pending EHS</option>
+              <option value="pending_pm">Pending PM</option>
+              <option value="approved">Approved</option>
+              <option value="closed">Closed</option>
+              <option value="rejected">Rejected</option>
+              <option value="revoked">Revoked</option>
+            </select>
+            <button class="btn btn-sm btn-outline" onclick="loadPTWList()">🔄 Refresh</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="ptwTable"></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PTW Detail Modal ═══ -->
+  <div class="modal-overlay" id="ptwModal">
+    <div class="modal" style="max-width:850px">
+      <div class="modal-header">
+        <h3 id="ptwModalTitle">PTW Detail</h3>
+        <button class="modal-close" onclick="closeModal('ptwModal')">✕</button>
+      </div>
+      <div class="modal-body" id="ptwModalBody"></div>
+      <div class="modal-footer" id="ptwModalFooter"></div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    const user = requireLogin();
+
+    // ── PTW Checklists — loaded from Google Sheet ─────────
+    // Sheet tab "PTW_CHECKLISTS" columns: type | name | item1...item21
+    // Edit/add/remove items directly in Google Sheet!
+    let PTW_CHECKLISTS = {};
+    let checklistsLoaded = false;
+
+    const FALLBACK_CHECKLISTS = {
+      GEN: ["Workers wearing the required PPE (E.g. safety helmet, safety boots, safety belt / harness and hand gloves, etc)","Safe means of access to work area provided","Material, equipment and work tools were placed at least 1m away from the edges of building","Materials, equipment and work tools were inspected by trade supervisor / Safety Supervisor in-charge and are free of damage /defect","All the electrical tools /equipment were inspected by trade supervisor / Safety Supervisor in-charge & in good condition","Adequate lightings were provided along the access and at the work area.","Adequate and secured lifelines with padding against wear and tear were provided.","Barricades were erected to prevent fall from height.","Torch light provided for the foremen and supervisor in-charge.","No incompatible work carried out in the vicinity.","Standing supervision by trade Supervisor / Safety Supervisor until work completion.","State name of Supervisor / Safety Supervisor assigned to supervise the workers during the night work - Name of Supervisor / Safety Supervisor:"],
+      HW: ["All cylinders in upright and secured position","In open air, well ventilated area","Area free from combustible material","No adjacent sources of heat/sparks","Highly Flammable & No Smoking signs prominently displayed","Suitable fire extinguishers provided","Cylinders & connections checked for leaks with soapy water","Where several cylinders are connected inparallel by a manifold, non-return valves should be incorporated","Regulators, torches and nozzles in good working condition","Regulators set to recommended working pressure","Flashback arrestors fitted to all pipeline outlets","Hoses free from cuts or wrapping materials","Designated fire watchman provided","Gas key provided to every facility","Fire extinguishers provided"],
+      WAH: ["Are the lifelines provided according to the PE design (if any)?","Are the lifelines secured to proper anchorage such as beams, columns etc.?","Are the fibre ropes or galvanized steel wires of adequate diameter, length, taut?","Are the fibre ropes properly secured using knots or attachments?","Are the lifelines provided with fall arrestor?","Are the workers provided with adequate fall protection devices such as full body harness attached with shock absorber?","Are the workers wearing the harness in a proper manner?","Does the workers know how to attach their fall protection device to the lifelines?","Are the fall protection devices used by the workers in proper working condition?","Webbing in proper condition (not torn, no loose thread)","Lanyard (rope) in proper condition? (not damage, splices not loose, etc.)","Snaphooks in proper condition (not deformed)","Buckle in proper condition? (not damage or deformed)","Are all workers working at height using their fall protection devices attached to the lifelines?"],
+      CS: ["Valid Confined Space Entry Permit issued and posted at entry point","Risk assessment conducted specifically for confined space entry","Confined space isolated (LOTO) from all energy sources","Atmosphere tested for oxygen (19.5-23.5%), flammable and toxic gases","Continuous atmospheric monitoring in place throughout work","Adequate ventilation (forced or natural) provided and verified","Trained Standby Person stationed outside at all times","Rescue plan and rescue equipment available at entry point","Workers wearing appropriate PPE including SCBA if required","Communication established between workers inside and standby","Entry log (names, times in/out) maintained","All workers trained and certified for confined space entry","Space purged, cleaned, and made safe prior to entry","Emergency rescue services contactable and aware of activity"],
+      LW: ["Description of load/s","Overall dimensions","Known Weight of load","Type of lifting equipment","Maximum SWL (Safe Working Load)","Intended load radius","SWL at this radius","Type of lifting gears","Means of communication","Can the operator see the loading and unloading point for the load from his position?","Is the ground made safe (e.g., placing steel plate)","Are the outriggers evenly extended?","Are there any overhead obstacles such as power lines?","Are there nearby buildings or structure, equipment or stacked materials that may obstruct lifting operation?","Is the lighting condition adequate?","Has the zone of operation been barricaded (with warning signs)?","Is there any thunderstorm and lightning strikes in the area?","Is there any strong winds that may sway that suspended load?","Is there any other circumstances that may cause the lifting operation to not proceed?","Have you attached the sketch on the methods used for rigging of loads?","Have you attached the layout of the area?"],
+      EXC: ["Permit to excavate obtained and utility services identified/located","All underground services (water, gas, electrical, telecom) marked out","Hand digging used within 500mm of known underground services","Excavation shored, benched, or battered to prevent collapse","Edge protection and barriers installed to prevent falls into excavation","Safe access/egress points (ladders) provided at max 9m intervals","System to monitor for accumulation of water or gases in excavation","Excavated materials stored at least 1m away from the edge","Excavation inspected at start of each shift by competent person","Nearby structures monitored for signs of settlement or cracking","Plant and machinery kept at safe distance from excavation edge","Workers wearing appropriate PPE (hard hat, safety boots, hi-vis vest)","Rescue plan prepared in case of collapse or emergency"]
+    };
+
+    // Load checklists from Google Sheet via n8n
+    async function loadChecklistsFromSheet() {
+      try {
+        const resp = await apiGet(ENDPOINTS.CHECKLIST_LIST, { category: "PTW_CHECKLISTS" });
+        if (resp && resp.data && resp.data.length > 0) {
+          PTW_CHECKLISTS = {};
+          resp.data.forEach(row => {
+            const type = row.type || row.Type;
+            if (!type) return;
+            const items = [];
+            for (let i = 1; i <= 21; i++) {
+              const val = row["item" + i] || row["Item" + i] || "";
+              if (val.trim()) items.push(val.trim());
+            }
+            PTW_CHECKLISTS[type] = items;
+          });
+          checklistsLoaded = true;
+          console.log("Checklists loaded from Google Sheet:", Object.keys(PTW_CHECKLISTS));
+        }
+      } catch (e) {
+        console.log("Sheet not reachable, using fallback checklists");
+      }
+
+      if (!checklistsLoaded || Object.keys(PTW_CHECKLISTS).length === 0) {
+        PTW_CHECKLISTS = { ...FALLBACK_CHECKLISTS };
+        console.log("Using fallback checklists");
+      }
+      updateWorkTypeDropdown();
+    }
+
+    function updateWorkTypeDropdown() {
+      const typeNames = {
+        GEN: "General Work", HW: "Hot Work", WAH: "Work At Height",
+        CS: "Confined Space", LW: "Lifting Operation", EXC: "Excavation Work"
+      };
+      const select = document.getElementById("ptwType");
+      select.innerHTML = '<option value="">-- Select Type --</option>';
+      Object.keys(PTW_CHECKLISTS).forEach(type => {
+        const name = typeNames[type] || type;
+        select.innerHTML += '<option value="' + type + '">' + type + ' \u2014 ' + name + '</option>';
+      });
+    }
+
+    // ── Projects List ─────────────────────────────────────
+    const PROJECTS = [
+      { name: "MRT LIGHT CHANGE", code: "MRT" },
+      { name: "T5", code: "T5" },
+      { name: "ITTC", code: "ITTC" },
+      { name: "BULIM", code: "BULIM" },
+    ];
+
+    // ── Counters (for smart ID) ───────────────────────────
+    let counters = {};
+
+    if (user) {
+      setupNavbar("ptw.html");
+      setupTabs();
+      setupPhotoUpload("ptwPhotos", "ptwPhotosPreview", 20);
+      
+      // Only Supervisor and Admin can submit new PTW
+      if (user.role === "SUPERVISOR" || user.role === "ADMIN") {
+        document.getElementById("tabSubmitBtn").classList.remove("hidden");
+      }
+      
+      loadChecklistsFromSheet().then(() => {
+        initForm();
+      });
+      loadPTWList();
+    }
+
+    // All users list (loaded from sheet or fallback)
+    let allUsers = [];
+
+    function initForm() {
+      // Fill project dropdown
+      const projSelect = document.getElementById("ptwProject");
+      PROJECTS.forEach(p => {
+        projSelect.innerHTML += `<option value="${p.code}" data-name="${p.name}">${p.name} (${p.code})</option>`;
+      });
+
+      // Load users for PIC dropdown
+      loadUsers();
+
+      // Auto-set company from user
+      document.getElementById("ptwCompany").value = user.company || "";
+
+      // Set default validity (today 8am to 6pm)
+      const today = todayStr();
+      document.getElementById("ptwStart").value = `${today}T08:00`;
+      document.getElementById("ptwEnd").value = `${today}T18:00`;
+
+      // Auto-generate ID on project/type change
+      document.getElementById("ptwProject").addEventListener("change", updatePTWId);
+      document.getElementById("ptwType").addEventListener("change", updatePTWId);
+    }
+
+    async function loadUsers() {
+      // Try loading from n8n / Google Sheet
+      try {
+        const resp = await apiGet(ENDPOINTS.LOGIN, { action: "list" });
+        if (resp && resp.data) {
+          allUsers = resp.data;
+        }
+      } catch (e) {
+        console.log("Using fallback users");
+      }
+
+      // Fallback demo users (from your old database)
+      if (allUsers.length === 0) {
+        allUsers = [
+          { name: "Admin", email: "boshptw@gmail.com", role: "admin", company: "Bosh Engineering Pte. Ltd." },
+          { name: "Anbu", email: "anbulkc1989@gmail.com", role: "supervisor", company: "Bosh Elect Pvt" },
+          { name: "PIC anbu", email: "anbulive8@gmail.com", role: "pic", company: "Bosh" },
+          { name: "Supe 2", email: "kannamar826@gmail.com", role: "supervisor", company: "Bosh Engineering Pte. Ltd." },
+          { name: "Bosh PTW", email: "2025bosh@gmail.com", role: "ehs", company: "Bosh Engineering Pte. Ltd." },
+          { name: "PM", email: "anbarasu@bosh.sg", role: "pm", company: "Bosh Engineering Pte. Ltd." },
+          { name: "Subash", email: "anbulkc@gmail.com", role: "pic", company: "Bosh Engineering Pte. Ltd." },
+        ];
+      }
+
+      // Fill PIC dropdown (only PIC role users)
+      const picSelect = document.getElementById("ptwPIC");
+      picSelect.innerHTML = '<option value="">-- Select PIC --</option>';
+      const picUsers = allUsers.filter(u => (u.role || u.Role || "").toLowerCase() === "pic");
+      picUsers.forEach(u => {
+        const name = u.name || u.Name;
+        const email = u.email || u.Email;
+        picSelect.innerHTML += `<option value='${JSON.stringify({name, email})}'>${name} (${email})</option>`;
+      });
+
+      if (picUsers.length === 0) {
+        picSelect.innerHTML += '<option value="" disabled>No PIC users found</option>';
+      }
+    }
+
+    // Get first user with matching role
+    function getUserByRole(role) {
+      const found = allUsers.find(u => (u.role || u.Role || "").toLowerCase() === role.toLowerCase());
+      if (found) return { name: found.name || found.Name, email: found.email || found.Email };
+      return { name: "", email: "" };
+    }
+
+    // ── Smart PTW ID: BOSH-PROJECT-TYPE-001 ───────────────
+    function updatePTWId() {
+      const project = document.getElementById("ptwProject").value;
+      const type = document.getElementById("ptwType").value;
+      const idField = document.getElementById("ptwId");
+
+      if (!project || !type) {
+        idField.value = "";
+        return;
+      }
+
+      const key = `${project}_${type}`;
+      const count = (counters[key] || 0) + 1;
+      idField.value = `BOSH-${project}-${type}-${String(count).padStart(3, "0")}`;
+    }
+
+    // ── Load Checklist by Type ────────────────────────────
+    function loadChecklist() {
+      const type = document.getElementById("ptwType").value;
+      const container = document.getElementById("checklistContainer");
+
+      if (!type || !PTW_CHECKLISTS[type]) {
+        container.innerHTML = '<div class="empty-state" style="padding:16px"><p class="text-muted">Select a <strong>Work Type</strong> above to load the checklist</p></div>';
+        return;
+      }
+
+      const items = PTW_CHECKLISTS[type];
+      const typeName = document.querySelector(`#ptwType option[value="${type}"]`).textContent;
+
+      container.innerHTML = `
+        <div style="background:var(--yellow-light);padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:0;font-size:0.8rem;font-weight:600;color:var(--navy)">
+          📋 ${typeName} — ${items.length} items
+        </div>
+        <div class="checklist-header">
+          <div style="flex:1"></div>
+          <div class="ch-label">Yes</div>
+          <div class="ch-label">No</div>
+          <div class="ch-label">NA</div>
+          <div class="ch-label" style="width:50px">Other</div>
+        </div>
+        <div class="checklist-grid" style="border-radius:0 0 var(--radius-md) var(--radius-md)">
+          ${items.map((item, i) => `
+            <div class="checklist-item">
+              <span class="cl-num">${i + 1}.</span>
+              <div class="cl-text">
+                <span>${item}</span>
+                <input type="text" class="cl-other-input" id="clOther${i}" placeholder="Please specify...">
+              </div>
+              <div class="cl-options">
+                <div class="cl-opt">
+                  <input type="radio" name="cl_${i}" value="Yes">
+                  <span>Yes</span>
+                </div>
+                <div class="cl-opt">
+                  <input type="radio" name="cl_${i}" value="No">
+                  <span>No</span>
+                </div>
+                <div class="cl-opt">
+                  <input type="radio" name="cl_${i}" value="NA">
+                  <span>NA</span>
+                </div>
+                <div class="cl-opt">
+                  <input type="radio" name="cl_${i}" value="Other" onchange="toggleOtherInput(${i}, this)">
+                  <span>Other</span>
+                </div>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+
+      // Attach change listeners to hide "Other" input when switching away
+      items.forEach((_, i) => {
+        document.querySelectorAll(`input[name="cl_${i}"]`).forEach(radio => {
+          radio.addEventListener("change", function() {
+            const otherInput = document.getElementById(`clOther${i}`);
+            if (this.value === "Other") {
+              otherInput.classList.add("show");
+              otherInput.focus();
+            } else {
+              otherInput.classList.remove("show");
+              otherInput.value = "";
+            }
+          });
+        });
+      });
+    }
+
+    function toggleOtherInput(index, radio) {
+      const input = document.getElementById(`clOther${index}`);
+      if (radio.checked) {
+        input.classList.add("show");
+        input.focus();
+      }
+    }
+
+    // ── Collect Checklist Answers ──────────────────────────
+    function getChecklistAnswers() {
+      const type = document.getElementById("ptwType").value;
+      if (!type || !PTW_CHECKLISTS[type]) return {};
+
+      const items = PTW_CHECKLISTS[type];
+      const answers = {};
+
+      items.forEach((item, i) => {
+        const selected = document.querySelector(`input[name="cl_${i}"]:checked`);
+        if (selected) {
+          let value = selected.value;
+          if (value === "Other") {
+            const otherText = document.getElementById(`clOther${i}`).value.trim();
+            value = otherText ? `Other: ${otherText}` : "Other";
+          }
+          answers[item] = value;
+        } else {
+          answers[item] = "";  // Not answered
+        }
+      });
+
+      return answers;
+    }
+
+    // ── Add Worker Row ────────────────────────────────────
+    function addWorkerRow() {
+      const div = document.createElement("div");
+      div.className = "worker-row";
+      div.innerHTML = `
+        <input type="text" class="worker-name" placeholder="Worker name">
+        <input type="text" class="worker-trade" placeholder="Trade" style="max-width:150px">
+        <button class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">✕</button>
+      `;
+      document.getElementById("workersList").appendChild(div);
+    }
+
+    function getWorkers() {
+      const rows = document.querySelectorAll(".worker-row");
+      const workers = [];
+      rows.forEach(row => {
+        const name = row.querySelector(".worker-name").value.trim();
+        const trade = row.querySelector(".worker-trade").value.trim();
+        if (name) workers.push({ name, trade });
+      });
+      return workers;
+    }
+
+    // ── Submit PTW ────────────────────────────────────────
+    async function submitPTW() {
+      const fields = [
+        { id: "ptwCompany", label: "Company" },
+        { id: "ptwProject", label: "Project" },
+        { id: "ptwType", label: "Work Type" },
+        { id: "ptwLocation", label: "Location" },
+        { id: "ptwStart", label: "Valid From" },
+        { id: "ptwEnd", label: "Valid To" },
+        { id: "ptwContact", label: "Contact Number" },
+        { id: "ptwDescription", label: "Work Description" },
+        { id: "ptwPIC", label: "PIC" },
+      ];
+      if (!validateRequired(fields)) return;
+
+      const workers = getWorkers();
+      if (workers.length === 0) {
+        showToast("Add at least one worker", "error");
+        return;
+      }
+
+      const checklistAnswers = getChecklistAnswers();
+
+      // Check if at least some checklist items are answered
+      const answeredCount = Object.values(checklistAnswers).filter(v => v).length;
+      const totalItems = Object.keys(checklistAnswers).length;
+      if (totalItems > 0 && answeredCount === 0) {
+        showToast("Please complete the safety checklist", "error");
+        return;
+      }
+
+      // Build stages object — chain assignment
+      // Supervisor selects PIC now. PIC will select EHS later. EHS will select PM later.
+      const picData = JSON.parse(document.getElementById("ptwPIC").value);
+
+      const stages = {
+        supervisor: { name: user.name, email: user.email, status: "approved", time: nowISO() },
+        pic: { name: picData.name, email: picData.email, status: "pending", time: "" },
+        ehs: { name: "", email: "", status: "not_assigned", time: "" },
+        pm: { name: "", email: "", status: "not_assigned", time: "" }
+      };
+
+      showLoading("Submitting PTW...");
+
+      // Upload photos
+      const photos = getPhotoFiles("ptwPhotos");
+      let photoURLs = [];
+      if (photos.length > 0) {
+        showLoading("Uploading photos...");
+        photoURLs = await uploadPhotos(photos, "PTW");
+      }
+
+      const data = {
+        id: document.getElementById("ptwId").value,
+        type: document.getElementById("ptwType").value,
+        status: "pending_pic",
+        company: document.getElementById("ptwCompany").value,
+        project: document.getElementById("ptwProject").options[document.getElementById("ptwProject").selectedIndex].dataset.name || document.getElementById("ptwProject").value,
+        location: document.getElementById("ptwLocation").value,
+        validityStart: document.getElementById("ptwStart").value,
+        validityEnd: document.getElementById("ptwEnd").value,
+        contactNumber: document.getElementById("ptwContact").value,
+        workDescription: document.getElementById("ptwDescription").value,
+        workers: JSON.stringify(workers),
+        equipment: document.getElementById("ptwEquipment").value,
+        checklist: JSON.stringify(checklistAnswers),
+        stages: JSON.stringify(stages),
+        supervisorEmail: user.email,
+        assignedPIC: JSON.stringify({ email: picData.email, name: picData.name }),
+        assignedEHS: "",
+        assignedPM: "",
+        photoURLs: photoURLs.join(","),
+        createdAt: nowISO(),
+        updatedAt: nowISO()
+      };
+
+      const resp = await apiPost(ENDPOINTS.PTW_SUBMIT, data);
+      hideLoading();
+
+      if (resp) {
+        // Update counter
+        const project = document.getElementById("ptwProject").value;
+        const type = document.getElementById("ptwType").value;
+        const key = `${project}_${type}`;
+        counters[key] = (counters[key] || 0) + 1;
+
+        showToast(`PTW ${data.id} submitted!`);
+        resetForm();
+        document.querySelector('[data-tab="tab-register"]').click();
+        loadPTWList();
+      }
+    }
+
+    function resetForm() {
+      document.getElementById("ptwProject").value = "";
+      document.getElementById("ptwType").value = "";
+      document.getElementById("ptwId").value = "";
+      document.getElementById("ptwLocation").value = "";
+      document.getElementById("ptwContact").value = "";
+      document.getElementById("ptwDescription").value = "";
+      document.getElementById("ptwEquipment").value = "";
+      document.getElementById("ptwPIC").value = "";
+      document.getElementById("ptwPhotos")._files = [];
+      document.getElementById("ptwPhotosPreview").innerHTML = "";
+      document.getElementById("checklistContainer").innerHTML = '<div class="empty-state" style="padding:16px"><p class="text-muted">Select a <strong>Work Type</strong> above to load the checklist</p></div>';
+      document.getElementById("workersList").innerHTML = `
+        <div class="worker-row">
+          <input type="text" class="worker-name" placeholder="Worker name">
+          <input type="text" class="worker-trade" placeholder="Trade (e.g. GW, ELC)" style="max-width:150px">
+          <button class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">✕</button>
+        </div>`;
+    }
+
+    // ── Load PTW Register ─────────────────────────────────
+    async function loadPTWList() {
+      const filterStatus = document.getElementById("filterStatus")?.value || "";
+      const filterProject = document.getElementById("filterProject")?.value || "";
+      const filterType = document.getElementById("filterType")?.value || "";
+      let records = [];
+      try {
+        const resp = await apiGet("ptw-list");
+        if (resp && resp.data) records = resp.data;
+      } catch (e) {
+        records = [];
+      }
+
+      // Populate project filter dropdown (once)
+      const projFilter = document.getElementById("filterProject");
+      if (projFilter && projFilter.options.length <= 1) {
+        const projects = [...new Set(records.map(r => r.project || r.Project).filter(Boolean))];
+        projects.forEach(p => {
+          projFilter.innerHTML += `<option value="${p}">${p}</option>`;
+        });
+      }
+
+      // Apply filters
+      if (filterStatus) records = records.filter(r => (r.status || r.Status) === filterStatus);
+      if (filterProject) records = records.filter(r => (r.project || r.Project) === filterProject);
+      if (filterType) records = records.filter(r => (r.type || r.Type) === filterType);
+
+      const headers = ["PTW ID", "Type", "Project", "Location", "Status", "PDF", "Created", "Actions"];
+      const rows = records.map(r => {
+        const id = r.id || r.ID;
+        const status = r.status || r.Status;
+        const pdfUrl = r.PDF_URL || r.pdfUrl || "";
+        return [
+          `<span class="mono fw-700">${id}</span>`,
+          `<span class="badge badge-submitted">${r.type || r.Type || ""}</span>`,
+          r.project || r.Project,
+          r.location || r.Location,
+          getStatusBadge(status),
+          pdfUrl ? `<a href="${pdfUrl.includes('drive.google.com') ? pdfUrl : pdfUrl}" target="_blank" class="btn btn-sm btn-primary" style="padding:6px 12px;font-size:0.78rem;text-decoration:none">📄 View PDF</a>` : '<span class="text-muted text-small">—</span>',
+          formatDateTime(r.createdAt || r.CreatedAt),
+          getActionBtns(id, status, pdfUrl)
+        ];
+      });
+      renderTable("ptwTable", headers, rows);
+    }
+
+    function getStatusBadge(status) {
+      const map = {
+        pending_pic: '<span class="badge badge-pending">Pending PIC</span>',
+        pending_ehs: '<span class="badge badge-pending">Pending EHS</span>',
+        pending_pm: '<span class="badge badge-pending">Pending PM</span>',
+        approved: '<span class="badge badge-approved">Approved</span>',
+        closed: '<span class="badge badge-closed">Closed</span>',
+        rejected: '<span class="badge badge-rejected">Rejected</span>',
+        revoked: '<span class="badge badge-revoked">🚨 REVOKED</span>',
+      };
+      return map[status] || getBadgeHTML(status);
+    }
+
+    function getActionBtns(id, status, pdfUrl) {
+      let btns = `<button class="btn btn-sm btn-navy" onclick="viewPTW('${id}')">👁️ View</button> `;
+      
+      // PDF download in actions too
+      if (pdfUrl) {
+        btns += `<a href="${pdfUrl}" target="_blank" class="btn btn-sm btn-outline" style="padding:4px 8px" title="Download PDF">📄</a> `;
+      }
+
+      // Role-based approve buttons — each approver selects the NEXT person
+      if (status === "pending_pic" && hasRole("PIC")) {
+        btns += `<button class="btn btn-sm btn-success" onclick="showApproveModal('${id}','pic','ehs')">✅ Approve & Assign EHS</button> `;
+      }
+      if (status === "pending_ehs" && hasRole("SAFETY")) {
+        btns += `<button class="btn btn-sm btn-success" onclick="showApproveModal('${id}','ehs','pm')">✅ Approve & Assign PM</button> `;
+      }
+      if (status === "pending_pm" && hasRole("PM")) {
+        btns += `<button class="btn btn-sm btn-success" onclick="finalApprove('${id}')">✅ Final Approve</button> `;
+      }
+
+      // ALL roles can Reject at any pending stage
+      if (status.startsWith("pending")) {
+        btns += `<button class="btn btn-sm btn-danger" onclick="rejectPTW('${id}')">❌ Reject</button> `;
+      }
+
+      // After PM approves → Supervisor closes (work done), PM/Admin can revoke
+      if (status === "approved") {
+        // Supervisor closes after work is done
+        if (hasRole("SUPERVISOR") || user.role === "ADMIN") {
+          btns += `<button class="btn btn-sm btn-outline" onclick="closePTW('${id}')">🔒 Close</button> `;
+        }
+        // PM and Admin can revoke (stop work)
+        if (hasRole("PM") || user.role === "ADMIN") {
+          btns += `<button class="btn btn-sm btn-danger" onclick="showRevokeModal('${id}')">🚨 Revoke</button>`;
+        }
+      }
+
+      return btns;
+    }
+
+    // ── View PTW Full Detail (loads from Google Sheet) ───
+    async function viewPTW(id) {
+      document.getElementById("ptwModalTitle").textContent = `PTW: ${id}`;
+      document.getElementById("ptwModalBody").innerHTML = `<div class="text-center" style="padding:32px"><div class="spinner"></div><br>Loading PTW details...</div>`;
+      document.getElementById("ptwModalFooter").innerHTML = "";
+      openModal("ptwModal");
+
+      // Fetch full PTW data from Google Sheet
+      const resp = await apiGet("ptw-detail", { id });
+      let ptw = null;
+      if (resp && resp.success && resp.data) {
+        ptw = resp.data;
+      } else {
+        // Fallback: find from cached list
+        document.getElementById("ptwModalBody").innerHTML = `<p class="text-muted text-center">Could not load details. Check connection.</p>`;
+        document.getElementById("ptwModalFooter").innerHTML = `<button class="btn btn-outline" onclick="closeModal('ptwModal')">Close</button>`;
+        return;
+      }
+
+      // Parse JSON fields safely
+      let stages = {}, workers = [], checklist = {}, pic = {}, ehs = {}, pm = {};
+      try { stages = JSON.parse(ptw.Stages || "{}"); } catch(e) {}
+      try { workers = JSON.parse(ptw.Workers || "[]"); } catch(e) {}
+      try { checklist = JSON.parse(ptw.Checklist || "{}"); } catch(e) {}
+      try { pic = JSON.parse(ptw.AssignedPIC || "{}"); } catch(e) {}
+      try { ehs = JSON.parse(ptw.AssignedEHS || "{}"); } catch(e) {}
+      try { pm = JSON.parse(ptw.AssignedPM || "{}"); } catch(e) {}
+
+      const status = ptw.Status || "";
+
+      // Stage timeline
+      function stageClass(stageKey) {
+        const s = stages[stageKey];
+        if (!s) return "";
+        if (s.status === "approved") return "done";
+        if (s.status === "pending") return "active";
+        if (s.status === "skipped") return "";
+        if (status === "rejected") return "rejected";
+        if (status === "revoked") return "rejected";
+        return "";
+      }
+      function stageInfo(stageKey) {
+        const s = stages[stageKey];
+        if (!s) return "—";
+        if (s.status === "approved") return `✅ ${s.name || ""}<br><span style="font-size:0.6rem">${s.time || ""}</span>`;
+        if (s.status === "pending") return `⏳ ${s.name || "Pending"}`;
+        if (s.status === "not_assigned") return "Not yet assigned";
+        return s.status || "—";
+      }
+
+      // Checklist HTML
+      let checklistHTML = "";
+      if (typeof checklist === "object" && Object.keys(checklist).length > 0) {
+        checklistHTML = '<div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:8px">';
+        Object.entries(checklist).forEach(([item, answer], i) => {
+          const color = answer === "Yes" ? "var(--green)" : answer === "No" ? "var(--red)" : answer === "NA" ? "var(--text-muted)" : "var(--orange)";
+          checklistHTML += `<div style="padding:6px 10px;border-bottom:1px solid var(--border-light);font-size:0.78rem;display:flex;justify-content:space-between;${i%2?'background:var(--bg)':''}">
+            <span>${i+1}. ${item.substring(0,80)}${item.length>80?'...':''}</span>
+            <strong style="color:${color};min-width:50px;text-align:right">${answer || "—"}</strong>
+          </div>`;
+        });
+        checklistHTML += '</div>';
+      }
+
+      // Workers HTML
+      let workersHTML = "";
+      if (workers.length > 0) {
+        workersHTML = '<div style="margin-top:8px">';
+        workers.forEach((w, i) => {
+          workersHTML += `<span style="display:inline-block;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-full);padding:2px 10px;font-size:0.75rem;margin:2px">${w.name}${w.trade ? ' ('+w.trade+')' : ''}${w.company ? ' — '+w.company : ''}</span>`;
+        });
+        workersHTML += '</div>';
+      }
+
+      // Revoke info
+      let revokeHTML = "";
+      if (status === "revoked") {
+        revokeHTML = `<div style="background:var(--red-bg);border:2px solid var(--red);border-radius:var(--radius-md);padding:12px;margin-top:12px">
+          <p style="color:var(--red);font-weight:800">🚨 REVOKED — STOP WORK</p>
+          <p style="font-size:0.85rem"><strong>Reason:</strong> ${ptw.RevokeReason || "—"}</p>
+          <p style="font-size:0.8rem;color:var(--text-muted)">By: ${ptw.RevokedBy || ""} | ${ptw.RevokeTime || ""}</p>
+        </div>`;
+      }
+
+      document.getElementById("ptwModalBody").innerHTML = `
+        <!-- Stage Timeline -->
+        <div class="stage-timeline">
+          <div class="stage-step ${stageClass('supervisor')}"><span class="stage-name">👷 Supervisor</span><span class="stage-info">${stageInfo('supervisor')}</span></div>
+          <div class="stage-step ${stageClass('pic')}"><span class="stage-name">📋 PIC</span><span class="stage-info">${stageInfo('pic')}</span></div>
+          <div class="stage-step ${stageClass('ehs')}"><span class="stage-name">🛡️ EHS</span><span class="stage-info">${stageInfo('ehs')}</span></div>
+          <div class="stage-step ${stageClass('pm')}"><span class="stage-name">🏗️ PM</span><span class="stage-info">${stageInfo('pm')}</span></div>
+        </div>
+        ${revokeHTML}
+
+        <!-- PTW Details -->
+        <table style="width:100%;font-size:0.85rem;margin-top:16px;border-collapse:collapse">
+          <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:8px;color:var(--text-light);width:140px"><strong>PTW ID</strong></td><td style="padding:8px" class="mono fw-700">${ptw.ID}</td></tr>
+          <tr style="border-bottom:1px solid var(--border-light);background:var(--bg)"><td style="padding:8px;color:var(--text-light)"><strong>Type</strong></td><td style="padding:8px">${ptw.Type}</td></tr>
+          <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:8px;color:var(--text-light)"><strong>Status</strong></td><td style="padding:8px">${getStatusBadge(status)}</td></tr>
+          <tr style="border-bottom:1px solid var(--border-light);background:var(--bg)"><td style="padding:8px;color:var(--text-light)"><strong>Company</strong></td><td style="padding:8px">${ptw.Company}</td></tr>
+          <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:8px;color:var(--text-light)"><strong>Project</strong></td><td style="padding:8px">${ptw.Project}</td></tr>
+          <tr style="border-bottom:1px solid var(--border-light);background:var(--bg)"><td style="padding:8px;color:var(--text-light)"><strong>Location</strong></td><td style="padding:8px">${ptw.Location}</td></tr>
+          <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:8px;color:var(--text-light)"><strong>Valid From</strong></td><td style="padding:8px">${ptw.ValidityStart}</td></tr>
+          <tr style="border-bottom:1px solid var(--border-light);background:var(--bg)"><td style="padding:8px;color:var(--text-light)"><strong>Valid To</strong></td><td style="padding:8px">${ptw.ValidityEnd}</td></tr>
+          <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:8px;color:var(--text-light)"><strong>Contact</strong></td><td style="padding:8px">${ptw.ContactNumber}</td></tr>
+          <tr style="border-bottom:1px solid var(--border-light);background:var(--bg)"><td style="padding:8px;color:var(--text-light)"><strong>Equipment</strong></td><td style="padding:8px">${ptw.Equipment || "—"}</td></tr>
+          <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:8px;color:var(--text-light)"><strong>Description</strong></td><td style="padding:8px">${ptw.WorkDescription}</td></tr>
+        </table>
+
+        ${workers.length > 0 ? `<div class="section-divider"><span>Workers (${workers.length})</span></div>${workersHTML}` : ''}
+        ${checklistHTML ? `<div class="section-divider"><span>Safety Checklist</span></div>${checklistHTML}` : ''}
+
+        ${ptw.PDF_URL ? `<div class="mt-md"><a href="${ptw.PDF_URL}" target="_blank" class="btn btn-sm btn-navy">📄 Download PDF</a></div>` : ''}
+      `;
+
+      document.getElementById("ptwModalFooter").innerHTML = `
+        ${ptw.PDF_URL ? `<a href="${ptw.PDF_URL}" target="_blank" class="btn btn-outline">📄 PDF</a>` : ''}
+        <button class="btn btn-outline" onclick="closeModal('ptwModal')">Close</button>
+      `;
+    }
+
+    // ── Approve & Assign Next ─────────────────────────────
+    function showApproveModal(ptwId, currentRole, nextRole) {
+      const roleLabels = { ehs: "EHS (Safety Officer)", pm: "PM (Project Manager)" };
+      const roleKeys = { ehs: "ehs", pm: "pm" };
+
+      // Get users for next role
+      const nextUsers = allUsers.filter(u => {
+        const r = (u.role || u.Role || "").toLowerCase();
+        return r === nextRole;
+      });
+
+      let optionsHTML = '<option value="">-- Select --</option>';
+      nextUsers.forEach(u => {
+        const name = u.name || u.Name;
+        const email = u.email || u.Email;
+        optionsHTML += `<option value='${JSON.stringify({name, email})}'>${name} (${email})</option>`;
+      });
+
+      document.getElementById("ptwModalTitle").textContent = `✅ Approve & Assign ${roleLabels[nextRole]}`;
+      document.getElementById("ptwModalBody").innerHTML = `
+        <p>You are approving PTW <strong class="mono">${ptwId}</strong> as <strong>${currentRole.toUpperCase()}</strong>.</p>
+        <p class="text-small text-muted mt-sm">Now select the next approver:</p>
+        <div class="form-group mt-md">
+          <label>Assign ${roleLabels[nextRole]} <span class="required">*</span></label>
+          <select id="nextApproverSelect">${optionsHTML}</select>
+        </div>
+      `;
+      document.getElementById("ptwModalFooter").innerHTML = `
+        <button class="btn btn-outline" onclick="closeModal('ptwModal')">Cancel</button>
+        <button class="btn btn-success" onclick="confirmApproveAndAssign('${ptwId}','${nextRole}')">✅ Approve & Assign</button>
+      `;
+      openModal("ptwModal");
+    }
+
+    async function confirmApproveAndAssign(ptwId, nextRole) {
+      const selectEl = document.getElementById("nextApproverSelect");
+      if (!selectEl.value) {
+        showToast("Please select the next approver", "error");
+        return;
+      }
+
+      const nextPerson = JSON.parse(selectEl.value);
+      const nextStatus = `pending_${nextRole}`;
+
+      showLoading("Approving & generating PDF...");
+      const gps = await getGPS();
+      const resp = await apiPost("ptw-approve", {
+        id: ptwId,
+        status: nextStatus,
+        approvedBy: user.name,
+        approvedAt: nowISO(),
+        latitude: gps.lat,
+        longitude: gps.lng,
+        [`assigned${nextRole.toUpperCase()}`]: JSON.stringify(nextPerson),
+        generatePDF: true
+      });
+      hideLoading();
+      closeModal("ptwModal");
+      if (resp) {
+        showToast(`PTW ${ptwId} approved! PDF generated. Assigned to ${nextPerson.name}`);
+        loadPTWList();
+      }
+    }
+
+    // ── PM Final Approve → PDF + Email to Supervisor + EHS ──
+    async function finalApprove(ptwId) {
+      showLoading("Final approval & generating PDF...");
+      const gps = await getGPS();
+      const resp = await apiPost("ptw-approve", {
+        id: ptwId,
+        status: "approved",
+        approvedBy: user.name,
+        approvedAt: nowISO(),
+        latitude: gps.lat,
+        longitude: gps.lng,
+        generatePDF: true,
+        emailRecipients: "supervisor,ehs"
+      });
+      hideLoading();
+      if (resp) {
+        let msg = `PTW ${ptwId} FULLY APPROVED! ✅`;
+        if (resp.pdfUrl) msg += ` PDF saved.`;
+        showToast(msg);
+        loadPTWList();
+      }
+    }
+
+    async function rejectPTW(id) {
+      const reason = prompt("Rejection reason:");
+      if (!reason) return;
+      showLoading("Rejecting & generating PDF...");
+      const resp = await apiPost("ptw-approve", {
+        id, status: "rejected", rejectedBy: user.name, rejectionReason: reason, generatePDF: true
+      });
+      hideLoading();
+      if (resp) {
+        showToast(`PTW ${id} rejected. PDF generated.`, "warning");
+        loadPTWList();
+      }
+    }
+
+    // ── Close PTW → PDF saved to Google Drive ──────────────
+    async function closePTW(id) {
+      if (!confirm(`Close PTW ${id}? Work is completed.`)) return;
+      showLoading("Closing & generating PDF...");
+      const resp = await apiPost("ptw-approve", {
+        id, status: "closed", closedBy: user.name, closedAt: nowISO(), generatePDF: true
+      });
+      hideLoading();
+      if (resp) {
+        showToast(`PTW ${id} closed. PDF saved to Google Drive.`);
+        loadPTWList();
+      }
+    }
+
+    // ── REVOKE PTW — STOP WORK (EHS or PM anytime) ───────
+    function showRevokeModal(ptwId) {
+      document.getElementById("ptwModalTitle").innerHTML = `🚨 REVOKE PTW — STOP WORK`;
+      document.getElementById("ptwModalBody").innerHTML = `
+        <div style="background:var(--red-bg);border:2px solid var(--red);border-radius:var(--radius-md);padding:16px;margin-bottom:16px">
+          <p style="color:var(--red);font-weight:800;font-size:1.1rem">⚠️ STOP WORK IMMEDIATELY</p>
+          <p style="color:var(--red);font-size:0.85rem;margin-top:4px">This will revoke PTW <strong class="mono">${ptwId}</strong> and notify ALL stakeholders immediately.</p>
+        </div>
+        <div class="form-group">
+          <label>Reason for Revoke <span class="required">*</span></label>
+          <select id="revokeType" onchange="toggleRevokeOther()">
+            <option value="">-- Select Reason --</option>
+            <option value="Unsafe Work Condition">Unsafe Work Condition</option>
+            <option value="Weather Conditions">Weather Conditions</option>
+            <option value="Equipment Failure">Equipment Failure</option>
+            <option value="Worker Safety Violation">Worker Safety Violation</option>
+            <option value="Emergency Situation">Emergency Situation</option>
+            <option value="Permit Expired">Permit Expired</option>
+            <option value="Other">Other (specify below)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Details <span class="required">*</span></label>
+          <textarea id="revokeReason" placeholder="Provide details about why work must stop..."></textarea>
+        </div>
+      `;
+      document.getElementById("ptwModalFooter").innerHTML = `
+        <button class="btn btn-outline" onclick="closeModal('ptwModal')">Cancel</button>
+        <button class="btn btn-danger" onclick="confirmRevoke('${ptwId}')">🚨 REVOKE — STOP ALL WORK</button>
+      `;
+      openModal("ptwModal");
+    }
+
+    async function confirmRevoke(ptwId) {
+      const type = document.getElementById("revokeType").value;
+      const details = document.getElementById("revokeReason").value.trim();
+      if (!type) { showToast("Select a revoke reason", "error"); return; }
+      if (!details) { showToast("Provide details", "error"); return; }
+
+      const reason = `${type}: ${details}`;
+
+      showLoading("REVOKING PTW — STOP WORK...");
+      const resp = await apiPost("ptw-revoke", {
+        id: ptwId,
+        status: "revoked",
+        revokedBy: user.name,
+        revokeReason: reason,
+        revokeTime: nowISO(),
+        generatePDF: true
+      });
+      hideLoading();
+      closeModal("ptwModal");
+      if (resp) {
+        showToast(`🚨 PTW ${ptwId} REVOKED — Stop Work email sent to ALL!`, "error");
+        loadPTWList();
+      }
+    }
+  </script>
+</body>
+</html>

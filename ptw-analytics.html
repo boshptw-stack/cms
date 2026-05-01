@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PTW Analytics — CMS</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    .analytics-card { background: white; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .analytics-card-header { background: var(--navy); color: white; padding: 12px 20px; font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+    .analytics-card-body { padding: 20px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .kpi { background: white; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 16px; text-align: center; position: relative; overflow: hidden; transition: all 0.2s; }
+    .kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .kpi::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px; }
+    .kpi.blue::after { background: #3B82F6; } .kpi.green::after { background: #22C55E; }
+    .kpi.orange::after { background: #F97316; } .kpi.red::after { background: #EF4444; }
+    .kpi.purple::after { background: #8B5CF6; } .kpi.yellow::after { background: #FBBF24; }
+    .kpi .kpi-val { font-size: 2.2rem; font-weight: 800; font-family: var(--font-mono); color: var(--navy); line-height: 1; }
+    .kpi .kpi-lbl { font-size: 0.7rem; color: var(--text-light); text-transform: uppercase; font-weight: 600; letter-spacing: 0.04em; margin-top: 6px; }
+    .kpi .kpi-trend { font-size: 0.7rem; margin-top: 4px; font-weight: 600; }
+    .kpi .kpi-trend.up { color: #22C55E; } .kpi .kpi-trend.down { color: #EF4444; }
+    .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .chart-full { grid-column: 1 / -1; }
+    .table-mini { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .table-mini th { background: var(--bg); padding: 8px 12px; text-align: left; font-size: 0.72rem; text-transform: uppercase; color: var(--text-light); font-weight: 600; border-bottom: 2px solid var(--border); }
+    .table-mini td { padding: 8px 12px; border-bottom: 1px solid var(--border-light); }
+    .table-mini tr:hover { background: rgba(251,191,36,0.04); }
+    .type-pill { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; color: white; }
+    .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 20px; padding: 14px 20px; background: white; border: 1px solid var(--border); border-radius: var(--radius-lg); }
+    .filter-bar label { font-size: 0.78rem; font-weight: 600; color: var(--text-light); }
+    .filter-bar select, .filter-bar input { font-size: 0.85rem; padding: 8px 12px; border-radius: var(--radius-md); border: 1.5px solid var(--border); min-height: 40px; font-family: var(--font-ui); }
+    @media (max-width: 768px) { .chart-grid { grid-template-columns: 1fr; } .kpi-grid { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand"><span class="icon">🏗️</span> CMS</div>
+    <button class="nav-toggle">☰</button>
+    <div class="navbar-links">
+        <a href="dashboard.html">📊 Dashboard</a>
+        <div class="nav-dropdown" id="ddSafety">
+          <button class="nav-dropdown-btn" onclick="toggleDropdown('ddSafety')">🛡️ HSE Safety ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="ptw.html">📋 Permit to Work (PTW)</a>
+            <a href="tbm.html">🔧 Toolbox Meeting (TBM)</a>
+            <a href="safety.html">🛡️ Safety Inspection</a>
+          </div>
+        </div>
+        <div class="nav-dropdown" id="ddQuality">
+          <button class="nav-dropdown-btn" onclick="toggleDropdown('ddQuality')">🔍 Quality ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="qaqc.html">🔍 Quality Inspection</a>
+            <a href="defect.html">🐛 Defect Management</a>
+          </div>
+        </div>
+        <a href="admin.html">⚙️ Admin</a>
+      </div>
+    <div class="navbar-user"></div>
+  </nav>
+  <div class="hazard-stripe"></div>
+  <script>
+    function toggleDropdown(id){document.querySelectorAll(".nav-dropdown").forEach(function(d){if(d.id!==id)d.classList.remove("open")});document.getElementById(id).classList.toggle("open")}
+    document.addEventListener("click",function(e){if(!e.target.closest(".nav-dropdown"))document.querySelectorAll(".nav-dropdown").forEach(function(d){d.classList.remove("open")})});
+  </script>
+
+  <div class="page-container">
+    <div class="page-header">
+      <h1>📋 PTW Analytics</h1>
+      <p>Monthly trends, type breakdown, and company-wise analysis</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <label>📅 Year:</label>
+      <select id="fYear" onchange="loadAnalytics()"></select>
+      <label>📅 Month:</label>
+      <select id="fMonth" onchange="loadAnalytics()">
+        <option value="">All Months</option>
+        <option value="01">January</option><option value="02">February</option><option value="03">March</option>
+        <option value="04">April</option><option value="05">May</option><option value="06">June</option>
+        <option value="07">July</option><option value="08">August</option><option value="09">September</option>
+        <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+      </select>
+      <label>🏗️ Project:</label>
+      <select id="fProject" onchange="loadAnalytics()"><option value="">All Projects</option></select>
+      <label>🏢 Company:</label>
+      <select id="fCompany" onchange="loadAnalytics()"><option value="">All Companies</option></select>
+      <button class="btn btn-primary btn-sm" onclick="loadAnalytics()">🔄 Refresh</button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <!-- Charts -->
+    <div class="chart-grid">
+      <div class="analytics-card chart-full">
+        <div class="analytics-card-header">📈 Monthly PTW Trend</div>
+        <div class="analytics-card-body"><canvas id="chartMonthly" height="200"></canvas></div>
+      </div>
+      <div class="analytics-card">
+        <div class="analytics-card-header">🔨 By Work Type</div>
+        <div class="analytics-card-body"><canvas id="chartType" height="260"></canvas></div>
+      </div>
+      <div class="analytics-card">
+        <div class="analytics-card-header">📊 By Status</div>
+        <div class="analytics-card-body"><canvas id="chartStatus" height="260"></canvas></div>
+      </div>
+      <div class="analytics-card">
+        <div class="analytics-card-header">🏗️ By Project</div>
+        <div class="analytics-card-body"><canvas id="chartProject" height="260"></canvas></div>
+      </div>
+      <div class="analytics-card">
+        <div class="analytics-card-header">🏢 By Company</div>
+        <div class="analytics-card-body"><canvas id="chartCompany" height="260"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Detailed Table -->
+    <div class="analytics-card mt-lg">
+      <div class="analytics-card-header">📋 Monthly Breakdown Table</div>
+      <div class="analytics-card-body" style="overflow-x:auto">
+        <table class="table-mini" id="monthlyTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    const user = requireLogin();
+    let charts = {}, allPTW = [];
+    const TC = {GEN:"#3B82F6",HW:"#EF4444",WAH:"#F97316",CS:"#8B5CF6",LW:"#22C55E",EXC:"#F59E0B"};
+    const SC = {pending_pic:"#F97316",pending_ehs:"#F97316",pending_pm:"#F97316",approved:"#22C55E",closed:"#64748B",rejected:"#EF4444",revoked:"#DC2626"};
+
+    if (user) {
+      setupNavbar("dashboard.html");
+      const yr = document.getElementById("fYear");
+      const curY = new Date().getFullYear();
+      for (let y = curY; y >= curY-3; y--) yr.innerHTML += `<option value="${y}">${y}</option>`;
+      loadAnalytics();
+    }
+
+    async function loadAnalytics() {
+      try {
+        const r = await apiGet("ptw-list");
+        if (r && r.data) allPTW = r.data;
+      } catch(e) {}
+
+      // Populate filters once
+      popFilter("fProject", allPTW, "Project");
+      popFilter("fCompany", allPTW, "Company");
+
+      // Apply filters
+      let data = [...allPTW];
+      const fy = document.getElementById("fYear").value;
+      const fm = document.getElementById("fMonth").value;
+      const fp = document.getElementById("fProject").value;
+      const fc = document.getElementById("fCompany").value;
+
+      if (fy) data = data.filter(r => (r.CreatedAt||r.createdAt||"").startsWith(fy));
+      if (fm) data = data.filter(r => { const d = r.CreatedAt||r.createdAt||""; return d.length >= 7 && d.substring(5,7) === fm; });
+      if (fp) data = data.filter(r => (r.Project||r.project) === fp);
+      if (fc) data = data.filter(r => (r.Company||r.company) === fc);
+
+      // KPIs
+      const total = data.length;
+      const approved = data.filter(r => (r.Status||r.status)==="approved").length;
+      const closed = data.filter(r => (r.Status||r.status)==="closed").length;
+      const rejected = data.filter(r => (r.Status||r.status)==="rejected").length;
+      const revoked = data.filter(r => (r.Status||r.status)==="revoked").length;
+      const pending = data.filter(r => (r.Status||r.status||"").startsWith("pending")).length;
+      const genC = data.filter(r=>(r.Type||r.type)==="GEN").length;
+      const hwC = data.filter(r=>(r.Type||r.type)==="HW").length;
+      const wahC = data.filter(r=>(r.Type||r.type)==="WAH").length;
+
+      document.getElementById("kpiGrid").innerHTML = `
+        <div class="kpi blue"><div class="kpi-val">${total}</div><div class="kpi-lbl">Total PTW</div></div>
+        <div class="kpi green"><div class="kpi-val">${approved}</div><div class="kpi-lbl">Active / Approved</div></div>
+        <div class="kpi orange"><div class="kpi-val">${pending}</div><div class="kpi-lbl">Pending Approval</div></div>
+        <div class="kpi purple"><div class="kpi-val">${closed}</div><div class="kpi-lbl">Closed</div></div>
+        <div class="kpi red"><div class="kpi-val">${rejected + revoked}</div><div class="kpi-lbl">Rejected / Revoked</div></div>
+        <div class="kpi yellow"><div class="kpi-val">${genC}</div><div class="kpi-lbl">General</div></div>
+        <div class="kpi" style="border-bottom:4px solid #EF4444"><div class="kpi-val">${hwC}</div><div class="kpi-lbl">Hot Work</div></div>
+        <div class="kpi" style="border-bottom:4px solid #F97316"><div class="kpi-val">${wahC}</div><div class="kpi-lbl">Work at Height</div></div>
+      `;
+
+      // Monthly Trend (stacked bar by type)
+      const months = {};
+      data.forEach(r => {
+        const d = r.CreatedAt||r.createdAt||"";
+        const m = d.substring(0,7);
+        const t = r.Type||r.type||"Other";
+        if (!m) return;
+        if (!months[m]) months[m] = {};
+        months[m][t] = (months[m][t]||0)+1;
+      });
+      const sortedMonths = Object.keys(months).sort();
+      const allTypes = [...new Set(data.map(r=>r.Type||r.type||"Other"))];
+      
+      if (charts.chartMonthly) charts.chartMonthly.destroy();
+      charts.chartMonthly = new Chart(document.getElementById("chartMonthly").getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: sortedMonths.map(m => { const [y,mo]=m.split("-"); return ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+mo]+" "+y; }),
+          datasets: allTypes.map(t => ({
+            label: t, data: sortedMonths.map(m => months[m][t]||0),
+            backgroundColor: TC[t]||"#94A3B8", borderRadius: 4
+          }))
+        },
+        options: { responsive:true, maintainAspectRatio:false, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,ticks:{stepSize:1}}}, plugins:{legend:{position:"bottom",labels:{font:{family:"'Plus Jakarta Sans'",size:11}}}} }
+      });
+
+      // Type chart
+      const typeCounts = {};
+      data.forEach(r => { const t=r.Type||r.type||"Other"; typeCounts[t]=(typeCounts[t]||0)+1; });
+      mkChart("chartType","doughnut",Object.keys(typeCounts),Object.values(typeCounts),Object.keys(typeCounts).map(t=>TC[t]||"#94A3B8"));
+
+      // Status chart
+      const statusCounts = {};
+      data.forEach(r => { const s=r.Status||r.status||""; statusCounts[s]=(statusCounts[s]||0)+1; });
+      mkChart("chartStatus","doughnut",Object.keys(statusCounts).map(s=>s.replace(/_/g," ").toUpperCase()),Object.values(statusCounts),Object.keys(statusCounts).map(s=>SC[s]||"#94A3B8"));
+
+      // Project chart
+      const projCounts = {};
+      data.forEach(r => { const p=r.Project||r.project||"?"; projCounts[p]=(projCounts[p]||0)+1; });
+      mkChart("chartProject","bar",Object.keys(projCounts),Object.values(projCounts),Object.values(projCounts).map(()=>"#0B1220"));
+
+      // Company chart
+      const compCounts = {};
+      data.forEach(r => { const c=r.Company||r.company||"?"; compCounts[c]=(compCounts[c]||0)+1; });
+      mkChart("chartCompany","bar",Object.keys(compCounts),Object.values(compCounts),Object.values(compCounts).map(()=>"#FBBF24"));
+
+      // Monthly table
+      let tHTML = '<thead><tr><th>Month</th>';
+      allTypes.forEach(t => { tHTML += `<th style="text-align:center"><span class="type-pill" style="background:${TC[t]||'#94A3B8'}">${t}</span></th>`; });
+      tHTML += '<th style="text-align:center">Total</th></tr></thead><tbody>';
+      sortedMonths.forEach(m => {
+        const mName = ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m.split("-")[1]] + " " + m.split("-")[0];
+        let rowTotal = 0;
+        tHTML += `<tr><td><strong>${mName}</strong></td>`;
+        allTypes.forEach(t => { const v = months[m][t]||0; rowTotal+=v; tHTML += `<td style="text-align:center;font-weight:600">${v||'—'}</td>`; });
+        tHTML += `<td style="text-align:center;font-weight:800;color:var(--navy)">${rowTotal}</td></tr>`;
+      });
+      tHTML += '</tbody>';
+      document.getElementById("monthlyTable").innerHTML = tHTML;
+    }
+
+    function popFilter(id, data, field) {
+      const el = document.getElementById(id);
+      if (el.options.length > 1) return;
+      [...new Set(data.map(r=>r[field]||r[field.toLowerCase()]).filter(Boolean))].sort().forEach(v => { el.innerHTML += `<option value="${v}">${v}</option>`; });
+    }
+
+    function mkChart(id, type, labels, values, colors) {
+      if (charts[id]) charts[id].destroy();
+      charts[id] = new Chart(document.getElementById(id).getContext("2d"), {
+        type, data: { labels, datasets: [{ data:values, backgroundColor:colors, borderWidth:type==="doughnut"?2:0, borderColor:"#fff", borderRadius:type==="bar"?6:0 }] },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:type==="doughnut"?"bottom":"none",labels:{font:{family:"'Plus Jakarta Sans'",size:11}}}}, scales:type==="bar"?{y:{beginAtZero:true,ticks:{stepSize:1}}}:{}, cutout:type==="doughnut"?"55%":undefined }
+      });
+    }
+  </script>
+</body>
+</html>

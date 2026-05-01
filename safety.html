@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safety — Daily Site Inspection</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand"><span class="icon">🏗️</span> CMS</div>
+    <button class="nav-toggle">☰</button>
+    <div class="navbar-links">
+        <a href="dashboard.html">📊 Dashboard</a>
+        <div class="nav-dropdown" id="ddSafety">
+          <button class="nav-dropdown-btn" onclick="toggleDropdown('ddSafety')">🛡️ HSE Safety ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="ptw.html">📋 Permit to Work (PTW)</a>
+            <a href="tbm.html">🔧 Toolbox Meeting (TBM)</a>
+            <a href="safety.html">🛡️ Safety Inspection</a>
+          </div>
+        </div>
+        <div class="nav-dropdown" id="ddQuality">
+          <button class="nav-dropdown-btn" onclick="toggleDropdown('ddQuality')">🔍 Quality ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="qaqc.html">🔍 Quality Inspection</a>
+            <a href="defect.html">🐛 Defect Management</a>
+          </div>
+        </div>
+        <a href="admin.html">⚙️ Admin</a>
+      </div>
+    <div class="navbar-user"></div>
+  </nav>
+  <div class="hazard-stripe"></div>
+
+  <div class="page-container">
+    <div class="page-header">
+      <h1>🛡️ Safety — Daily Site Inspection</h1>
+      <p>Hubble-style inspection with multi-issue tracking: Add → Rectify → Close</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab-safety-new">➕ New Inspection</button>
+      <button class="tab-btn" data-tab="tab-safety-register">📂 Inspection Register</button>
+    </div>
+
+    <!-- TAB: New Inspection -->
+    <div class="tab-content active" id="tab-safety-new">
+      <div class="card">
+        <h3>Cover Page Information</h3>
+        <div class="hazard-stripe" style="margin:16px 0"></div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Reference No</label>
+            <input type="text" id="safetyRefNo" readonly class="mono" style="background:var(--bg)">
+          </div>
+          <div class="form-group">
+            <label>Date of Inspection <span class="required">*</span></label>
+            <input type="date" id="safetyDate">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Company Name <span class="required">*</span></label>
+            <input type="text" id="safetyCompany" placeholder="Your company name">
+          </div>
+          <div class="form-group">
+            <label>Project Name <span class="required">*</span></label>
+            <input type="text" id="safetyProject" placeholder="Project name">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Project Address</label>
+            <input type="text" id="safetyAddress" placeholder="Full address">
+          </div>
+          <div class="form-group">
+            <label>Location <span class="required">*</span></label>
+            <input type="text" id="safetyLocation" placeholder="e.g. Block A, Level 5">
+          </div>
+        </div>
+
+        <div class="section-divider"><span>Inspector Details</span></div>
+
+        <div class="grid-3">
+          <div class="form-group">
+            <label>Inspector Name</label>
+            <input type="text" id="safetyInspector" readonly style="background:var(--bg)">
+          </div>
+          <div class="form-group">
+            <label>Inspector Email</label>
+            <input type="text" id="safetyInspectorEmail" readonly style="background:var(--bg)">
+          </div>
+          <div class="form-group">
+            <label>Inspector Company</label>
+            <input type="text" id="safetyInspectorCo" placeholder="Company">
+          </div>
+        </div>
+
+        <div class="section-divider"><span>Issues Found</span></div>
+
+        <!-- Issues List -->
+        <div id="issuesList"></div>
+
+        <button class="btn btn-outline btn-block mt-md" onclick="addIssueRow()">
+          ➕ Add Issue
+        </button>
+
+        <div class="hazard-stripe" style="margin:24px 0"></div>
+
+        <button class="btn btn-primary btn-block" onclick="submitSafetyInspection()">
+          🛡️ Submit Safety Inspection
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB: Register -->
+    <div class="tab-content" id="tab-safety-register">
+      <div class="card" style="padding:var(--space-sm)">
+        <div class="d-flex justify-between items-center flex-wrap gap-sm" style="padding:var(--space-md)">
+          <h3>Safety Inspection Register</h3>
+          <button class="btn btn-sm btn-outline" onclick="loadSafetyList()">🔄 Refresh</button>
+        </div>
+        <div class="table-wrap">
+          <table id="safetyTable"></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Issue Detail Modal (for Rectify / Close) -->
+  <div class="modal-overlay" id="issueModal">
+    <div class="modal" style="max-width:800px">
+      <div class="modal-header">
+        <h3 id="issueModalTitle">Issue Detail</h3>
+        <button class="modal-close" onclick="closeModal('issueModal')">✕</button>
+      </div>
+      <div class="modal-body" id="issueModalBody"></div>
+      <div class="modal-footer" id="issueModalFooter"></div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    const user = requireLogin();
+    let issueCount = 0;
+
+    if (user) {
+      setupNavbar("safety.html");
+      setupTabs();
+      document.getElementById("safetyRefNo").value = generateId("SI");
+      document.getElementById("safetyDate").value = todayStr();
+      document.getElementById("safetyInspector").value = user.name;
+      document.getElementById("safetyInspectorEmail").value = user.email;
+      addIssueRow();
+      loadSafetyList();
+    }
+
+    // ── Add Issue Row ─────────────────────────────────────
+    function addIssueRow() {
+      issueCount++;
+      const refNo = document.getElementById("safetyRefNo").value;
+      const issueId = `${refNo}-${String(issueCount).padStart(2, "0")}`;
+
+      const div = document.createElement("div");
+      div.className = "card mt-md";
+      div.id = `issue-${issueCount}`;
+      div.style.border = "2px solid var(--border)";
+      div.innerHTML = `
+        <div class="d-flex justify-between items-center mb-md">
+          <h4>🔴 Issue ${issueCount}: <span class="mono">${issueId}</span></h4>
+          ${issueCount > 1 ? `<button class="btn btn-sm btn-danger" onclick="this.closest('.card').remove()">🗑️ Remove</button>` : ''}
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Location <span class="required">*</span></label>
+            <input type="text" class="issue-location" placeholder="Specific location">
+          </div>
+          <div class="form-group">
+            <label>Responsible Contractor <span class="required">*</span></label>
+            <input type="text" class="issue-contractor" placeholder="Contractor name">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Type of Finding <span class="required">*</span></label>
+            <select class="issue-type">
+              <option value="">-- Select --</option>
+              ${DEFAULT_CHECKLISTS.TYPE_OF_FINDING.map(t => `<option value="${t}">${t}</option>`).join("")}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Severity <span class="required">*</span></label>
+            <select class="issue-severity">
+              <option value="">-- Select --</option>
+              ${DEFAULT_CHECKLISTS.SEVERITY.map(s => `<option value="${s}">${s}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Deadline <span class="required">*</span></label>
+            <input type="date" class="issue-deadline">
+          </div>
+          <div class="form-group">
+            <label>Description <span class="required">*</span></label>
+            <input type="text" class="issue-desc" placeholder="Describe the issue">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>📸 Before Photo</label>
+          <div class="photo-upload-area" onclick="this.querySelector('input').click()">
+            <div class="upload-icon">📷</div>
+            <p>Upload before photo</p>
+            <input type="file" class="issue-photo" accept="image/*" hidden onchange="previewSingle(this)">
+          </div>
+          <div class="photo-preview-grid issue-photo-preview"></div>
+        </div>
+
+        <div class="form-group">
+          <label>✍️ Inspector Signature</label>
+          <div class="signature-pad-wrap">
+            <canvas class="issue-sig-canvas" id="sigCanvas${issueCount}"></canvas>
+            <div class="sig-actions">
+              <button class="btn btn-sm btn-outline" onclick="clearSig('sigCanvas${issueCount}')">Clear</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById("issuesList").appendChild(div);
+
+      // Init signature pad
+      setTimeout(() => initSignaturePad(`sigCanvas${issueCount}`), 100);
+    }
+
+    function previewSingle(input) {
+      const preview = input.closest('.form-group').querySelector('.issue-photo-preview');
+      preview.innerHTML = "";
+      if (input.files[0]) {
+        const div = document.createElement("div");
+        div.className = "preview-item";
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(input.files[0]);
+        div.appendChild(img);
+        preview.appendChild(div);
+      }
+    }
+
+    function clearSig(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    // ── Submit Inspection ─────────────────────────────────
+    async function submitSafetyInspection() {
+      const fields = [
+        { id: "safetyDate", label: "Date" },
+        { id: "safetyCompany", label: "Company" },
+        { id: "safetyProject", label: "Project" },
+        { id: "safetyLocation", label: "Location" },
+      ];
+      if (!validateRequired(fields)) return;
+
+      const issueCards = document.querySelectorAll("#issuesList .card");
+      if (issueCards.length === 0) {
+        showToast("Add at least one issue", "error");
+        return;
+      }
+
+      showLoading("Submitting inspection...");
+
+      const refNo = document.getElementById("safetyRefNo").value;
+      const issues = [];
+
+      for (let i = 0; i < issueCards.length; i++) {
+        const card = issueCards[i];
+        const loc = card.querySelector(".issue-location").value.trim();
+        const contractor = card.querySelector(".issue-contractor").value.trim();
+        const type = card.querySelector(".issue-type").value;
+        const severity = card.querySelector(".issue-severity").value;
+        const deadline = card.querySelector(".issue-deadline").value;
+        const desc = card.querySelector(".issue-desc").value.trim();
+
+        if (!loc || !contractor || !type || !severity || !deadline || !desc) {
+          hideLoading();
+          showToast(`Issue ${i + 1}: Please fill all required fields`, "error");
+          return;
+        }
+
+        issues.push({
+          issueId: `${refNo}-${String(i + 1).padStart(2, "0")}`,
+          location: loc,
+          contractor,
+          typeOfFinding: type,
+          severity,
+          deadline,
+          description: desc,
+          status: "OPEN",
+          addTime: nowISO()
+        });
+      }
+
+      const data = {
+        refNo,
+        dateOfInspection: document.getElementById("safetyDate").value,
+        companyName: document.getElementById("safetyCompany").value,
+        project: document.getElementById("safetyProject").value,
+        projectAddress: document.getElementById("safetyAddress").value,
+        location: document.getElementById("safetyLocation").value,
+        inspectorName: user.name,
+        inspectorEmail: user.email,
+        inspectorCompany: document.getElementById("safetyInspectorCo").value,
+        status: "OPEN",
+        issuesCount: issues.length,
+        issues
+      };
+
+      const resp = await apiPost(ENDPOINTS.SAFETY_SUBMIT, data);
+      hideLoading();
+
+      if (resp) {
+        showToast(`Safety Inspection ${refNo} submitted with ${issues.length} issues!`);
+        document.getElementById("safetyRefNo").value = generateId("SI");
+        document.getElementById("safetyCompany").value = "";
+        document.getElementById("safetyProject").value = "";
+        document.getElementById("safetyAddress").value = "";
+        document.getElementById("safetyLocation").value = "";
+        document.getElementById("safetyInspectorCo").value = "";
+        issueCount = 0;
+        document.getElementById("issuesList").innerHTML = "";
+        addIssueRow();
+        document.querySelector('[data-tab="tab-safety-register"]').click();
+        loadSafetyList();
+      }
+    }
+
+    // ── Load Safety Register ──────────────────────────────
+    async function loadSafetyList() {
+      let records = [];
+      try {
+        const resp = await apiGet(ENDPOINTS.SAFETY_LIST);
+        if (resp && resp.data) records = resp.data;
+      } catch (e) {
+        records = [
+          { refNo: "SI-260428-0001", dateOfInspection: "2026-04-28", project: "Skyline Tower", location: "Block A", inspectorName: "Chong Safety", status: "OPEN", issuesCount: 3 }
+        ];
+      }
+
+      const headers = ["Ref No", "Date", "Project", "Location", "Inspector", "Issues", "Status", "Actions"];
+      const rows = records.map(r => [
+        `<span class="mono">${r.refNo || r.RefNo}</span>`,
+        formatDate(r.dateOfInspection || r.DateOfInspection),
+        r.project || r.Project,
+        r.location || r.Location,
+        r.inspectorName || r.InspectorName,
+        `<strong>${r.issuesCount || r.IssuesCount || 0}</strong>`,
+        getBadgeHTML(r.status || r.Status),
+        `<button class="btn btn-sm btn-navy" onclick="viewInspection('${r.refNo || r.RefNo}')">👁️ View</button>`
+      ]);
+      renderTable("safetyTable", headers, rows);
+    }
+
+    // ── View Inspection Issues ────────────────────────────
+    async function viewInspection(refNo) {
+      let issues = [];
+      try {
+        const resp = await apiGet(ENDPOINTS.SAFETY_DETAIL, { refNo });
+        if (resp && resp.data) issues = resp.data;
+      } catch (e) {
+        issues = [
+          { issueId: `${refNo}-01`, location: "Staircase B", contractor: "ABC Const.", typeOfFinding: "Housekeeping", severity: "Major", status: "OPEN", description: "Debris blocking exit" },
+          { issueId: `${refNo}-02`, location: "Level 5", contractor: "XYZ Works", typeOfFinding: "PPE Violation", severity: "Minor", status: "RECTIFIED", description: "Worker without helmet" },
+        ];
+      }
+
+      let html = `<h4 class="mb-md">Issues for <span class="mono">${refNo}</span></h4>`;
+      issues.forEach(issue => {
+        const id = issue.issueId || issue.IssueID;
+        const status = issue.status || issue.Status;
+        html += `
+          <div class="card mt-sm" style="border-left:4px solid ${status === 'OPEN' ? 'var(--red)' : status === 'RECTIFIED' ? 'var(--purple)' : 'var(--green)'}">
+            <div class="d-flex justify-between items-center">
+              <span class="mono fw-700">${id}</span>
+              ${getBadgeHTML(status)}
+            </div>
+            <p class="mt-sm"><strong>${issue.typeOfFinding || issue.TypeOfFinding}</strong> — ${issue.description || issue.Description}</p>
+            <p class="text-small text-muted">📍 ${issue.location || issue.Location} | 🏗️ ${issue.contractor || issue.Contractor} | ${getBadgeHTML(issue.severity || issue.Severity)}</p>
+            <div class="d-flex gap-sm mt-sm">
+              ${status === 'OPEN' ? `<button class="btn btn-sm btn-primary" onclick="showRectifyModal('${id}','${refNo}')">🔧 Rectify</button>` : ''}
+              ${status === 'RECTIFIED' ? `<button class="btn btn-sm btn-success" onclick="showCloseModal('${id}','${refNo}')">✅ Close</button><button class="btn btn-sm btn-danger" onclick="reopenIssue('${id}','${refNo}')">🔄 Reopen</button>` : ''}
+              ${status === 'CLOSED' ? `<span class="text-small text-green">✅ Closed</span>` : ''}
+            </div>
+          </div>
+        `;
+      });
+
+      document.getElementById("issueModalTitle").textContent = `Inspection ${refNo}`;
+      document.getElementById("issueModalBody").innerHTML = html;
+      document.getElementById("issueModalFooter").innerHTML = `<button class="btn btn-outline" onclick="closeModal('issueModal')">Close</button>`;
+      openModal("issueModal");
+    }
+
+    function showRectifyModal(issueId, refNo) {
+      document.getElementById("issueModalTitle").textContent = `🔧 Rectify Issue ${issueId}`;
+      document.getElementById("issueModalBody").innerHTML = `
+        <div class="form-group">
+          <label>After Photo <span class="required">*</span></label>
+          <div class="photo-upload-area" onclick="document.getElementById('rectifyPhoto').click()">
+            <div class="upload-icon">📷</div>
+            <p>Upload rectification photo</p>
+            <input type="file" id="rectifyPhoto" accept="image/*" hidden onchange="previewSingle(this)">
+          </div>
+          <div class="photo-preview-grid issue-photo-preview"></div>
+        </div>
+        <div class="form-group">
+          <label>Remarks</label>
+          <textarea id="rectifyRemarks" placeholder="What was done to fix the issue..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>✍️ Contractor Signature</label>
+          <div class="signature-pad-wrap">
+            <canvas id="rectifySigCanvas" style="width:100%;height:150px"></canvas>
+            <div class="sig-actions"><button class="btn btn-sm btn-outline" onclick="clearSig('rectifySigCanvas')">Clear</button></div>
+          </div>
+        </div>
+      `;
+      document.getElementById("issueModalFooter").innerHTML = `
+        <button class="btn btn-outline" onclick="viewInspection('${refNo}')">← Back</button>
+        <button class="btn btn-primary" onclick="submitRectify('${issueId}','${refNo}')">🔧 Submit Rectification</button>
+      `;
+      setTimeout(() => initSignaturePad("rectifySigCanvas"), 100);
+    }
+
+    async function submitRectify(issueId, refNo) {
+      showLoading("Submitting rectification...");
+      const resp = await apiPost(ENDPOINTS.SAFETY_RECTIFY, {
+        issueId, refNo,
+        remarks: document.getElementById("rectifyRemarks")?.value || "",
+        rectifyTime: nowISO()
+      });
+      hideLoading();
+      if (resp) {
+        showToast(`Issue ${issueId} rectified!`);
+        viewInspection(refNo);
+      }
+    }
+
+    function showCloseModal(issueId, refNo) {
+      document.getElementById("issueModalTitle").textContent = `✅ Close Issue ${issueId}`;
+      document.getElementById("issueModalBody").innerHTML = `
+        <p>Confirm closing issue <strong class="mono">${issueId}</strong>?</p>
+        <div class="form-group mt-md">
+          <label>Close Remarks</label>
+          <textarea id="closeRemarks" placeholder="Closing remarks..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>✍️ Safety/PM Signature</label>
+          <div class="signature-pad-wrap">
+            <canvas id="closeSigCanvas" style="width:100%;height:150px"></canvas>
+            <div class="sig-actions"><button class="btn btn-sm btn-outline" onclick="clearSig('closeSigCanvas')">Clear</button></div>
+          </div>
+        </div>
+      `;
+      document.getElementById("issueModalFooter").innerHTML = `
+        <button class="btn btn-outline" onclick="viewInspection('${refNo}')">← Back</button>
+        <button class="btn btn-success" onclick="submitClose('${issueId}','${refNo}')">✅ Close Issue</button>
+      `;
+      setTimeout(() => initSignaturePad("closeSigCanvas"), 100);
+    }
+
+    async function submitClose(issueId, refNo) {
+      showLoading("Closing issue...");
+      const resp = await apiPost(ENDPOINTS.SAFETY_CLOSE, {
+        issueId, refNo,
+        remarks: document.getElementById("closeRemarks")?.value || "",
+        closeTime: nowISO()
+      });
+      hideLoading();
+      if (resp) {
+        showToast(`Issue ${issueId} closed!`);
+        viewInspection(refNo);
+      }
+    }
+
+    async function reopenIssue(issueId, refNo) {
+      if (!confirm(`Reopen issue ${issueId}?`)) return;
+      showLoading("Reopening...");
+      const resp = await apiPost(ENDPOINTS.SAFETY_REOPEN, { issueId, refNo });
+      hideLoading();
+      if (resp) {
+        showToast(`Issue ${issueId} reopened`, "warning");
+        viewInspection(refNo);
+      }
+    }
+  </script>
+</body>
+</html>
