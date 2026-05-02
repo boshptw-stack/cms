@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safety Inspection Analytics — BOSH CMS</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <div class="main-content">
+      <header class="page-header">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="mobile-toggle header-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+          <h1>Safety Inspection Analytics</h1>
+        </div>
+        <div class="header-actions">
+          <select class="filter-select" id="periodFilter" onchange="loadData()">
+            <option value="all">All Time</option>
+            <option value="month">This Month</option>
+            <option value="quarter">This Quarter</option>
+          </select>
+          <button class="header-btn" onclick="loadData()">↻ Refresh</button>
+        </div>
+      </header>
+
+      <div class="page-body">
+        <div class="analytics-hero">
+          <div class="hero-icon" style="background:var(--accent-green-glow)">🛡️</div>
+          <div class="hero-text">
+            <h2>Safety Inspection Analytics</h2>
+            <p>Detailed breakdown of inspection pass/fail rates, category-level performance, and trending safety findings.</p>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card green">
+            <div class="stat-icon">🛡️</div>
+            <div class="stat-label">Total Inspections</div>
+            <div class="stat-value"><span class="count-up" data-target="89">0</span></div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon">✅</div>
+            <div class="stat-label">Pass Rate</div>
+            <div class="stat-value"><span class="count-up" data-target="81" data-suffix="%">0</span></div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-label">Critical Findings</div>
+            <div class="stat-value"><span class="count-up" data-target="5">0</span></div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-icon">📊</div>
+            <div class="stat-label">Avg Score</div>
+            <div class="stat-value"><span class="count-up" data-target="87" data-suffix="/100">0</span></div>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3>Monthly Inspections & Pass Rate</h3>
+              <div class="chart-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div>Inspections</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>Pass Rate %</div>
+              </div>
+            </div>
+            <div class="chart-body"><canvas id="monthlyChart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><h3>Overall Results</h3></div>
+            <div class="chart-body"><canvas id="resultsChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="chart-header"><h3>Pass/Fail by Category</h3></div>
+            <div class="chart-body"><canvas id="categoryChart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><h3>Pass Rate Trend</h3></div>
+            <div class="chart-body"><canvas id="trendChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Top Findings Table -->
+        <div class="table-card">
+          <div class="table-toolbar"><h3>Top Safety Findings</h3></div>
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Finding</th><th>Occurrences</th><th>Severity</th><th>Impact</th></tr></thead>
+            <tbody id="findingsTable"></tbody>
+          </table>
+        </div>
+
+        <!-- Category Breakdown Table -->
+        <div class="table-card">
+          <div class="table-toolbar"><h3>Category Performance</h3></div>
+          <table class="data-table">
+            <thead><tr><th>Category</th><th>Total</th><th>Pass</th><th>Fail</th><th>Pass Rate</th><th>Status</th></tr></thead>
+            <tbody id="categoryTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if (!initPage('safety-analytics')) throw 'Auth required';
+    let charts = {};
+
+    async function loadData() {
+      showLoading('Loading Safety Inspection analytics...');
+      let data = await API.getSafetyAnalytics({ period: document.getElementById('periodFilter').value });
+      if (!data || !data.stats) data = DemoData.safetyAnalytics;
+      render(data);
+      hideLoading();
+    }
+
+    function render(data) {
+      initScrollAnimations();
+      initCountUps();
+
+      // Monthly
+      if (charts.monthly) charts.monthly.destroy();
+      const ctx1 = document.getElementById('monthlyChart').getContext('2d');
+      charts.monthly = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: data.monthly.map(m=>m.month),
+          datasets: [
+            { label:'Inspections', data: data.monthly.map(m=>m.inspections), backgroundColor: CHART_COLORS.green.bg, borderColor: CHART_COLORS.green.border, borderWidth:1, yAxisID:'y' },
+            { label:'Pass Rate', data: data.monthly.map(m=>m.passRate), type:'line', borderColor: CHART_COLORS.blue.border, backgroundColor:'transparent', borderWidth:2, pointRadius:4, pointBackgroundColor: CHART_COLORS.blue.border, yAxisID:'y1' }
+          ]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          scales: {
+            y: { beginAtZero:true, position:'left' },
+            y1: { beginAtZero:true, max:100, position:'right', grid:{drawOnChartArea:false}, ticks:{callback:v=>v+'%'} }
+          }
+        }
+      });
+
+      // Results doughnut
+      if (charts.results) charts.results.destroy();
+      const ctx2 = document.getElementById('resultsChart').getContext('2d');
+      charts.results = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: ['Pass','Fail','Partial'],
+          datasets: [{ data: [data.results.pass, data.results.fail, data.results.partial], backgroundColor: [CHART_COLORS.green.solid, CHART_COLORS.red.solid, CHART_COLORS.amber.solid], borderWidth:0, hoverOffset:6 }]
+        },
+        options: { responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{legend:{display:true,position:'right',labels:{boxWidth:10,padding:12,font:{size:11}}}} }
+      });
+
+      // Category stacked bar
+      if (charts.category) charts.category.destroy();
+      const ctx3 = document.getElementById('categoryChart').getContext('2d');
+      const cats = Object.keys(data.byCategory);
+      charts.category = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+          labels: cats,
+          datasets: [
+            { label:'Pass', data: cats.map(c=>data.byCategory[c].pass), backgroundColor: CHART_COLORS.green.bg, borderColor: CHART_COLORS.green.border, borderWidth:1 },
+            { label:'Fail', data: cats.map(c=>data.byCategory[c].fail), backgroundColor: CHART_COLORS.red.bg, borderColor: CHART_COLORS.red.border, borderWidth:1 }
+          ]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false, indexAxis:'y',
+          scales: { x:{stacked:true,beginAtZero:true}, y:{stacked:true,grid:{display:false}} },
+          plugins: { legend:{display:true,position:'top',labels:{boxWidth:10,padding:10,font:{size:11}}} }
+        }
+      });
+
+      // Trend
+      if (charts.trend) charts.trend.destroy();
+      const ctx4 = document.getElementById('trendChart').getContext('2d');
+      charts.trend = new Chart(ctx4, {
+        type: 'line',
+        data: {
+          labels: data.monthly.map(m=>m.month),
+          datasets: [{
+            label:'Pass Rate',
+            data: data.monthly.map(m=>m.passRate),
+            borderColor: CHART_COLORS.green.border,
+            backgroundColor: createGradient(ctx4, CHART_COLORS.green),
+            fill:true, borderWidth:2, pointRadius:4, pointBackgroundColor: CHART_COLORS.green.border
+          }]
+        },
+        options: { responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}}} }
+      });
+
+      // Findings table
+      document.getElementById('findingsTable').innerHTML = data.topFindings.map((f,i)=>`
+        <tr>
+          <td style="font-weight:600;color:var(--text-muted)">${i+1}</td>
+          <td style="font-weight:500;color:var(--text-primary)">${f.finding}</td>
+          <td><span class="count-up" data-target="${f.count}">0</span></td>
+          <td>${severityBadge(f.severity)}</td>
+          <td><div class="progress-bar" style="width:100px"><div class="progress-fill ${f.severity==='Critical'?'red':f.severity==='High'?'amber':'green'}" style="width:${f.count*12}%"></div></div></td>
+        </tr>
+      `).join('');
+
+      // Category table
+      document.getElementById('categoryTable').innerHTML = Object.entries(data.byCategory).map(([cat,v])=>{
+        const rate = Math.round(v.pass/v.total*100);
+        return `<tr>
+          <td style="font-weight:500;color:var(--text-primary)">${cat}</td>
+          <td>${v.total}</td>
+          <td style="color:var(--accent-green)">${v.pass}</td>
+          <td style="color:var(--accent-red)">${v.fail}</td>
+          <td>${rate}%</td>
+          <td><div class="progress-bar" style="width:100px"><div class="progress-fill ${rate>=85?'green':rate>=70?'amber':'red'}" style="width:${rate}%"></div></div></td>
+        </tr>`;
+      }).join('');
+
+      initCountUps();
+    }
+
+    loadData();
+  </script>
+</body>
+</html>

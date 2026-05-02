@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safety Inspection — BOSH CMS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <div class="main-content">
+      <header class="page-header">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="mobile-toggle header-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+          <h1>Safety Inspection</h1>
+        </div>
+        <div class="header-actions">
+          <button class="header-btn" onclick="loadData()">↻ Refresh</button>
+        </div>
+      </header>
+
+      <div class="page-body">
+        <div class="filters-bar">
+          <select class="filter-select" id="resultFilter" onchange="filterTable()">
+            <option value="">All Results</option>
+            <option value="Pass">Pass</option>
+            <option value="Fail">Fail</option>
+            <option value="Partial">Partial</option>
+          </select>
+          <select class="filter-select" id="categoryFilter" onchange="filterTable()">
+            <option value="">All Categories</option>
+            <option value="Housekeeping">Housekeeping</option>
+            <option value="PPE Compliance">PPE Compliance</option>
+            <option value="Fall Protection">Fall Protection</option>
+            <option value="Fire Safety">Fire Safety</option>
+            <option value="Electrical">Electrical</option>
+            <option value="Scaffolding">Scaffolding</option>
+            <option value="Excavation">Excavation</option>
+          </select>
+          <input type="text" class="table-search" placeholder="Search inspections..." id="searchInput" oninput="filterTable()">
+        </div>
+
+        <div class="table-card">
+          <table class="data-table">
+            <thead>
+              <tr><th>Inspection ID</th><th>Date</th><th>Category</th><th>Location</th><th>Inspector</th><th>Score</th><th>Result</th><th>Findings</th></tr>
+            </thead>
+            <tbody id="safetyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if (!initPage('safety')) throw 'Auth required';
+    let allData = [];
+
+    const demoItems = [
+      { id:'SI-089', date:'2026-05-01', category:'Housekeeping', location:'Block A L5', inspector:'Safety Team', score:92, result:'Pass', findings:1 },
+      { id:'SI-088', date:'2026-04-30', category:'Fall Protection', location:'Block B L8', inspector:'Rizal', score:65, result:'Fail', findings:4 },
+      { id:'SI-087', date:'2026-04-29', category:'PPE Compliance', location:'Block C L3', inspector:'Safety Team', score:88, result:'Pass', findings:2 },
+      { id:'SI-086', date:'2026-04-28', category:'Fire Safety', location:'Block D L1', inspector:'Ahmad', score:78, result:'Partial', findings:3 },
+      { id:'SI-085', date:'2026-04-27', category:'Electrical', location:'Block A L2', inspector:'Raj', score:95, result:'Pass', findings:0 },
+      { id:'SI-084', date:'2026-04-26', category:'Scaffolding', location:'Block B L6', inspector:'Safety Team', score:82, result:'Pass', findings:2 },
+      { id:'SI-083', date:'2026-04-25', category:'Housekeeping', location:'Block C G', inspector:'Lim', score:90, result:'Pass', findings:1 },
+      { id:'SI-082', date:'2026-04-24', category:'Excavation', location:'Block D G', inspector:'Safety Team', score:58, result:'Fail', findings:5 },
+      { id:'SI-081', date:'2026-04-23', category:'Fall Protection', location:'Block A L7', inspector:'Rizal', score:85, result:'Pass', findings:2 },
+      { id:'SI-080', date:'2026-04-22', category:'PPE Compliance', location:'Block B L3', inspector:'Ahmad', score:75, result:'Partial', findings:3 },
+    ];
+
+    async function loadData() {
+      showLoading('Loading Safety Inspection data...');
+      let data = await API.getSafetyData();
+      allData = (data && data.items) ? data.items : demoItems;
+      renderTable(allData);
+      hideLoading();
+      initScrollAnimations();
+    }
+
+    function renderTable(items) {
+      document.getElementById('safetyBody').innerHTML = items.map(r => {
+        const scoreColor = r.score >= 85 ? 'var(--accent-green)' : r.score >= 70 ? 'var(--accent-amber)' : 'var(--accent-red)';
+        return `
+        <tr>
+          <td style="color:var(--text-accent);font-weight:600">${r.id}</td>
+          <td>${formatDate(r.date)}</td>
+          <td>${r.category}</td>
+          <td>${r.location}</td>
+          <td>${r.inspector}</td>
+          <td style="font-weight:600;color:${scoreColor}">${r.score}/100</td>
+          <td>${statusBadge(r.result)}</td>
+          <td>${r.findings > 0 ? `<span style="color:var(--accent-amber)">${r.findings} finding${r.findings>1?'s':''}</span>` : '<span style="color:var(--text-muted)">None</span>'}</td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="8"><p style="text-align:center;padding:40px;color:var(--text-muted)">No records found</p></td></tr>';
+    }
+
+    function filterTable() {
+      const result = document.getElementById('resultFilter').value;
+      const category = document.getElementById('categoryFilter').value;
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = allData.filter(r =>
+        (!result || r.result === result) &&
+        (!category || r.category === category) &&
+        (!search || Object.values(r).some(v => String(v).toLowerCase().includes(search)))
+      );
+      renderTable(filtered);
+    }
+
+    loadData();
+  </script>
+</body>
+</html>

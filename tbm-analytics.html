@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TBM Analytics — BOSH CMS</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <div class="main-content">
+      <header class="page-header">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="mobile-toggle header-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+          <h1>TBM Analytics</h1>
+        </div>
+        <div class="header-actions">
+          <select class="filter-select" id="periodFilter" onchange="loadData()">
+            <option value="all">All Time</option>
+            <option value="month">This Month</option>
+            <option value="quarter">This Quarter</option>
+          </select>
+          <button class="header-btn" onclick="loadData()">↻ Refresh</button>
+        </div>
+      </header>
+
+      <div class="page-body">
+        <div class="analytics-hero">
+          <div class="hero-icon" style="background:var(--accent-purple-glow)">👷</div>
+          <div class="hero-text">
+            <h2>Toolbox Meeting Analytics</h2>
+            <p>Track TBM frequency, attendance trends, topic coverage, and compliance across all work areas.</p>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card purple">
+            <div class="stat-icon">👷</div>
+            <div class="stat-label">Total TBM</div>
+            <div class="stat-value"><span class="count-up" data-target="156">0</span></div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon">📅</div>
+            <div class="stat-label">This Month</div>
+            <div class="stat-value"><span class="count-up" data-target="28">0</span></div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon">👥</div>
+            <div class="stat-label">Avg Attendance</div>
+            <div class="stat-value"><span class="count-up" data-target="18">0</span></div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-icon">✅</div>
+            <div class="stat-label">Completion Rate</div>
+            <div class="stat-value"><span class="count-up" data-target="92" data-suffix="%">0</span></div>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3>Monthly TBM Count & Attendance</h3>
+              <div class="chart-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6"></div>Sessions</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#06b6d4"></div>Avg Attendance</div>
+              </div>
+            </div>
+            <div class="chart-body"><canvas id="attendanceChart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><h3>Topics Distribution</h3></div>
+            <div class="chart-body"><canvas id="topicChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="chart-header"><h3>TBM by Block</h3></div>
+            <div class="chart-body"><canvas id="blockChart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><h3>Attendance Trend</h3></div>
+            <div class="chart-body"><canvas id="trendChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Topic breakdown table -->
+        <div class="table-card">
+          <div class="table-toolbar"><h3>Topic Coverage Breakdown</h3></div>
+          <table class="data-table">
+            <thead><tr><th>Topic</th><th>Sessions</th><th>% of Total</th><th>Coverage</th></tr></thead>
+            <tbody id="topicTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if (!initPage('tbm-analytics')) throw 'Auth required';
+    let charts = {};
+
+    async function loadData() {
+      showLoading('Loading TBM analytics...');
+      let data = await API.getTBMAnalytics({ period: document.getElementById('periodFilter').value });
+      if (!data || !data.stats) data = DemoData.tbmAnalytics;
+      render(data);
+      hideLoading();
+    }
+
+    function render(data) {
+      initScrollAnimations();
+      initCountUps();
+
+      // Attendance chart
+      if (charts.attendance) charts.attendance.destroy();
+      const ctx1 = document.getElementById('attendanceChart').getContext('2d');
+      charts.attendance = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: data.attendance.map(m=>m.month),
+          datasets: [
+            { label:'Sessions', data: data.attendance.map(m=>m.count), backgroundColor: CHART_COLORS.purple.bg, borderColor: CHART_COLORS.purple.border, borderWidth:1, yAxisID:'y' },
+            { label:'Avg Attendance', data: data.attendance.map(m=>m.avg), type:'line', borderColor: CHART_COLORS.cyan.border, backgroundColor:'transparent', borderWidth:2, pointRadius:4, pointBackgroundColor: CHART_COLORS.cyan.border, yAxisID:'y1' }
+          ]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          scales: {
+            y: { beginAtZero:true, position:'left' },
+            y1: { beginAtZero:true, position:'right', grid:{drawOnChartArea:false} }
+          }
+        }
+      });
+
+      // Topics
+      if (charts.topic) charts.topic.destroy();
+      const ctx2 = document.getElementById('topicChart').getContext('2d');
+      const topicColors = [CHART_COLORS.blue, CHART_COLORS.purple, CHART_COLORS.red, CHART_COLORS.amber, CHART_COLORS.green, CHART_COLORS.cyan, CHART_COLORS.pink, CHART_COLORS.gray];
+      charts.topic = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(data.byTopic),
+          datasets: [{ data: Object.values(data.byTopic), backgroundColor: topicColors.map(c=>c.solid), borderWidth:0, hoverOffset:6 }]
+        },
+        options: { responsive:true, maintainAspectRatio:false, cutout:'60%', plugins:{legend:{display:true,position:'right',labels:{boxWidth:8,padding:6,font:{size:10}}}} }
+      });
+
+      // Block
+      if (charts.block) charts.block.destroy();
+      const ctx3 = document.getElementById('blockChart').getContext('2d');
+      charts.block = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(data.byBlock),
+          datasets: [{ data: Object.values(data.byBlock), backgroundColor: [CHART_COLORS.purple.bg, CHART_COLORS.blue.bg, CHART_COLORS.green.bg, CHART_COLORS.amber.bg], borderColor: [CHART_COLORS.purple.border, CHART_COLORS.blue.border, CHART_COLORS.green.border, CHART_COLORS.amber.border], borderWidth:1 }]
+        },
+        options: { responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true}} }
+      });
+
+      // Trend
+      if (charts.trend) charts.trend.destroy();
+      const ctx4 = document.getElementById('trendChart').getContext('2d');
+      charts.trend = new Chart(ctx4, {
+        type: 'line',
+        data: {
+          labels: data.attendance.map(m=>m.month),
+          datasets: [{
+            label:'Total Attendance',
+            data: data.attendance.map(m=>m.count * m.avg),
+            borderColor: CHART_COLORS.purple.border,
+            backgroundColor: createGradient(ctx4, CHART_COLORS.purple),
+            fill:true, borderWidth:2, pointRadius:4, pointBackgroundColor: CHART_COLORS.purple.border
+          }]
+        },
+        options: { responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true}} }
+      });
+
+      // Topic table
+      const total = Object.values(data.byTopic).reduce((a,b)=>a+b,0);
+      document.getElementById('topicTable').innerHTML = Object.entries(data.byTopic).map(([topic,count])=>{
+        const pct = Math.round(count/total*100);
+        return `<tr>
+          <td style="font-weight:500;color:var(--text-primary)">${topic}</td>
+          <td>${count}</td>
+          <td>${pct}%</td>
+          <td><div class="progress-bar" style="width:140px"><div class="progress-fill blue" style="width:${pct*2}%"></div></div></td>
+        </tr>`;
+      }).join('');
+    }
+
+    loadData();
+  </script>
+</body>
+</html>

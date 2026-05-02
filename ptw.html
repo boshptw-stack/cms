@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PTW — BOSH CMS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <div class="main-content">
+      <header class="page-header">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="mobile-toggle header-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+          <h1>Permit to Work</h1>
+        </div>
+        <div class="header-actions">
+          <button class="header-btn" onclick="loadData()">↻ Refresh</button>
+        </div>
+      </header>
+
+      <div class="page-body">
+        <div class="filters-bar">
+          <select class="filter-select" id="statusFilter" onchange="filterTable()">
+            <option value="">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Pending">Pending</option>
+            <option value="Closed">Closed</option>
+            <option value="Expired">Expired</option>
+          </select>
+          <select class="filter-select" id="typeFilter" onchange="filterTable()">
+            <option value="">All Types</option>
+            <option value="Hot Work">Hot Work</option>
+            <option value="Confined Space">Confined Space</option>
+            <option value="Electrical">Electrical</option>
+            <option value="Excavation">Excavation</option>
+            <option value="General">General</option>
+          </select>
+          <input type="text" class="table-search" placeholder="Search PTW..." id="searchInput" oninput="filterTable()">
+        </div>
+
+        <div class="table-card">
+          <table class="data-table" id="ptwTable">
+            <thead>
+              <tr>
+                <th>PTW ID</th>
+                <th>Type</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Supervisor</th>
+              </tr>
+            </thead>
+            <tbody id="ptwBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if (!initPage('ptw')) throw 'Auth required';
+
+    let allData = [];
+
+    const demoItems = [
+      { id:'PTW-247', type:'Hot Work', location:'Block A L5', status:'Active', startDate:'2026-04-30', endDate:'2026-05-02', supervisor:'Ahmad' },
+      { id:'PTW-246', type:'Confined Space', location:'Block B B1', status:'Pending', startDate:'2026-04-29', endDate:'2026-05-01', supervisor:'Raj' },
+      { id:'PTW-245', type:'Electrical', location:'Block C L3', status:'Active', startDate:'2026-04-28', endDate:'2026-04-30', supervisor:'Lim' },
+      { id:'PTW-244', type:'General', location:'Block A L2', status:'Closed', startDate:'2026-04-27', endDate:'2026-04-28', supervisor:'Ali' },
+      { id:'PTW-243', type:'Excavation', location:'Block D G', status:'Expired', startDate:'2026-04-20', endDate:'2026-04-26', supervisor:'Tan' },
+      { id:'PTW-242', type:'Hot Work', location:'Block B L4', status:'Active', startDate:'2026-04-25', endDate:'2026-04-28', supervisor:'Kumar' },
+      { id:'PTW-241', type:'General', location:'Block C L1', status:'Closed', startDate:'2026-04-24', endDate:'2026-04-25', supervisor:'Ahmad' },
+      { id:'PTW-240', type:'Confined Space', location:'Block A B2', status:'Closed', startDate:'2026-04-22', endDate:'2026-04-24', supervisor:'Wong' },
+      { id:'PTW-239', type:'Electrical', location:'Block D L2', status:'Pending', startDate:'2026-04-21', endDate:'2026-04-23', supervisor:'Raj' },
+      { id:'PTW-238', type:'Hot Work', location:'Block B L6', status:'Closed', startDate:'2026-04-20', endDate:'2026-04-21', supervisor:'Lim' },
+      { id:'PTW-237', type:'General', location:'Block A L3', status:'Closed', startDate:'2026-04-18', endDate:'2026-04-19', supervisor:'Ali' },
+      { id:'PTW-236', type:'Excavation', location:'Block C G', status:'Active', startDate:'2026-04-17', endDate:'2026-05-01', supervisor:'Tan' },
+    ];
+
+    async function loadData() {
+      showLoading('Loading PTW data...');
+      let data = await API.getPTWData();
+      allData = (data && data.items) ? data.items : demoItems;
+      renderTable(allData);
+      hideLoading();
+      initScrollAnimations();
+    }
+
+    function renderTable(items) {
+      document.getElementById('ptwBody').innerHTML = items.map(r => `
+        <tr>
+          <td style="color:var(--text-accent);font-weight:600">${r.id}</td>
+          <td>${r.type}</td>
+          <td>${r.location}</td>
+          <td>${statusBadge(r.status)}</td>
+          <td>${formatDate(r.startDate)}</td>
+          <td>${formatDate(r.endDate)}</td>
+          <td>${r.supervisor}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="7" class="empty-state"><p>No records found</p></td></tr>';
+    }
+
+    function filterTable() {
+      const status = document.getElementById('statusFilter').value;
+      const type = document.getElementById('typeFilter').value;
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = allData.filter(r =>
+        (!status || r.status === status) &&
+        (!type || r.type === type) &&
+        (!search || Object.values(r).some(v => String(v).toLowerCase().includes(search)))
+      );
+      renderTable(filtered);
+    }
+
+    loadData();
+  </script>
+</body>
+</html>

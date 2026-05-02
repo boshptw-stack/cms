@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PTW Analytics — BOSH CMS</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <div class="main-content">
+      <header class="page-header">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="mobile-toggle header-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+          <h1>PTW Analytics</h1>
+        </div>
+        <div class="header-actions">
+          <select class="filter-select" id="periodFilter" onchange="loadData()">
+            <option value="all">All Time</option>
+            <option value="month">This Month</option>
+            <option value="quarter">This Quarter</option>
+            <option value="year">This Year</option>
+          </select>
+          <button class="header-btn" onclick="loadData()">↻ Refresh</button>
+        </div>
+      </header>
+
+      <div class="page-body">
+        <!-- Hero -->
+        <div class="analytics-hero">
+          <div class="hero-icon" style="background:var(--accent-blue-glow)">📋</div>
+          <div class="hero-text">
+            <h2>Permit to Work Analytics</h2>
+            <p>Comprehensive analysis of PTW issuance, completion rates, and trends across all blocks and work types.</p>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card blue">
+            <div class="stat-icon">📋</div>
+            <div class="stat-label">Total Issued</div>
+            <div class="stat-value"><span class="count-up" data-target="247">0</span></div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon">✅</div>
+            <div class="stat-label">Currently Active</div>
+            <div class="stat-value"><span class="count-up" data-target="38">0</span></div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-label">Avg Duration (days)</div>
+            <div class="stat-value"><span class="count-up" data-target="4.2">0</span></div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-icon">🔄</div>
+            <div class="stat-label">Renewal Rate</div>
+            <div class="stat-value"><span class="count-up" data-target="18" data-suffix="%">0</span></div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3>Monthly Issuance & Closure</h3>
+              <div class="chart-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>Issued</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div>Closed</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>Expired</div>
+              </div>
+            </div>
+            <div class="chart-body"><canvas id="monthlyChart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><h3>PTW by Work Type</h3></div>
+            <div class="chart-body"><canvas id="typeChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="chart-header"><h3>Distribution by Block</h3></div>
+            <div class="chart-body"><canvas id="blockChart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><h3>Closure Rate Trend</h3></div>
+            <div class="chart-body"><canvas id="closureChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Top Supervisors -->
+        <div class="table-card">
+          <div class="table-toolbar">
+            <h3>Top Supervisors by PTW Count</h3>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr><th>#</th><th>Supervisor</th><th>PTW Count</th><th>Completion %</th><th>Performance</th></tr>
+            </thead>
+            <tbody id="supervisorTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if (!initPage('ptw-analytics')) throw 'Auth required';
+    let charts = {};
+
+    async function loadData() {
+      showLoading('Loading PTW analytics...');
+      let data = await API.getPTWAnalytics({ period: document.getElementById('periodFilter').value });
+      if (!data || !data.stats) data = DemoData.ptwAnalytics;
+      render(data);
+      hideLoading();
+    }
+
+    function render(data) {
+      initScrollAnimations();
+      initCountUps();
+
+      // Monthly
+      if (charts.monthly) charts.monthly.destroy();
+      const ctx1 = document.getElementById('monthlyChart').getContext('2d');
+      charts.monthly = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: data.monthly.map(m=>m.month),
+          datasets: [
+            { label:'Issued', data: data.monthly.map(m=>m.issued), backgroundColor: CHART_COLORS.blue.bg, borderColor: CHART_COLORS.blue.border, borderWidth:1 },
+            { label:'Closed', data: data.monthly.map(m=>m.closed), backgroundColor: CHART_COLORS.green.bg, borderColor: CHART_COLORS.green.border, borderWidth:1 },
+            { label:'Expired', data: data.monthly.map(m=>m.expired), backgroundColor: CHART_COLORS.red.bg, borderColor: CHART_COLORS.red.border, borderWidth:1 }
+          ]
+        },
+        options: { responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true}} }
+      });
+
+      // Type
+      if (charts.type) charts.type.destroy();
+      const ctx2 = document.getElementById('typeChart').getContext('2d');
+      const typeLabels = Object.keys(data.byType).map(k=>k.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()));
+      const palette = [CHART_COLORS.blue.solid, CHART_COLORS.amber.solid, CHART_COLORS.green.solid, CHART_COLORS.purple.solid, CHART_COLORS.cyan.solid];
+      charts.type = new Chart(ctx2, {
+        type: 'polarArea',
+        data: {
+          labels: typeLabels,
+          datasets: [{ data: Object.values(data.byType), backgroundColor: palette.map(c=>c+'33'), borderColor: palette, borderWidth:1 }]
+        },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true,position:'right',labels:{boxWidth:10,padding:8,font:{size:11}}}} }
+      });
+
+      // Block
+      if (charts.block) charts.block.destroy();
+      const ctx3 = document.getElementById('blockChart').getContext('2d');
+      charts.block = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(data.byBlock),
+          datasets: [{ data: Object.values(data.byBlock), backgroundColor: [CHART_COLORS.blue.bg, CHART_COLORS.green.bg, CHART_COLORS.amber.bg, CHART_COLORS.purple.bg], borderColor: [CHART_COLORS.blue.border, CHART_COLORS.green.border, CHART_COLORS.amber.border, CHART_COLORS.purple.border], borderWidth:1 }]
+        },
+        options: { responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true}} }
+      });
+
+      // Closure rate
+      if (charts.closure) charts.closure.destroy();
+      const ctx4 = document.getElementById('closureChart').getContext('2d');
+      const closureRates = data.monthly.map(m=> m.issued > 0 ? Math.round(m.closed/m.issued*100) : 0);
+      charts.closure = new Chart(ctx4, {
+        type: 'line',
+        data: {
+          labels: data.monthly.map(m=>m.month),
+          datasets: [{
+            label: 'Closure Rate %',
+            data: closureRates,
+            borderColor: CHART_COLORS.green.border,
+            backgroundColor: createGradient(ctx4, CHART_COLORS.green),
+            fill:true, borderWidth:2, pointRadius:4, pointBackgroundColor: CHART_COLORS.green.border
+          }]
+        },
+        options: { responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}}} }
+      });
+
+      // Supervisors table
+      document.getElementById('supervisorTable').innerHTML = data.topSupervisors.map((s,i)=>`
+        <tr>
+          <td style="font-weight:600;color:var(--text-muted)">${i+1}</td>
+          <td style="font-weight:500;color:var(--text-primary)">${s.name}</td>
+          <td><span class="count-up" data-target="${s.count}">0</span></td>
+          <td>${s.completion}%</td>
+          <td><div class="progress-bar" style="width:120px"><div class="progress-fill ${s.completion>=95?'green':s.completion>=90?'blue':'amber'}" style="width:${s.completion}%"></div></div></td>
+        </tr>
+      `).join('');
+      initCountUps();
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
