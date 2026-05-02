@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Toolbox Meeting — BOSH CMS</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+</head>
+<body>
+<div class="app">
+  <div class="main">
+    <div class="topbar">
+      <h1><button class="mobile-menu" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button> Toolbox Meeting</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-primary btn-sm" onclick="openModal('modalNew')">+ New TBM</button>
+        <button class="btn btn-secondary btn-sm" onclick="load()">↻</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="filters">
+        <select class="filter-select" id="fTopic" onchange="filter()"><option value="">All Topics</option><option>Working at Height</option><option>Electrical Safety</option><option>Fire Prevention</option><option>PPE Usage</option><option>Chemical Handling</option><option>Housekeeping</option><option>Heat Stress</option><option>Excavation Safety</option></select>
+        <input class="search-input" id="fSearch" placeholder="Search..." oninput="filter()">
+      </div>
+      <div class="table-card show">
+        <table class="dt"><thead><tr><th>TBM #</th><th>Date</th><th>Topic</th><th>Location</th><th>Conductor</th><th>Attendance</th><th>Status</th><th>Actions</th></tr></thead><tbody id="tbl"></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New TBM Modal -->
+<div class="modal-backdrop" id="modalNew">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-head"><h2>New Toolbox Meeting</h2><button class="modal-close" onclick="closeModal('modalNew')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Topic</label><select class="form-input" id="tbmTopic"><option value="">Select topic...</option><option>Working at Height</option><option>Electrical Safety</option><option>Fire Prevention</option><option>PPE Usage</option><option>Chemical Handling</option><option>Housekeeping</option><option>Heat Stress</option><option>Excavation Safety</option></select></div>
+        <div class="form-group"><label>Date</label><input class="form-input" id="tbmDate" type="date"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Location</label><input class="form-input" id="tbmLoc" placeholder="e.g. Block A"></div>
+        <div class="form-group"><label>Project</label><select class="form-input" id="tbmProject"><option value="">Select...</option></select></div>
+      </div>
+      <div class="form-group"><label>Work Description</label><textarea class="form-input" id="tbmDesc" placeholder="Describe today's work activities..."></textarea></div>
+
+      <h3 style="margin:16px 0 8px;font-size:14px">Hazard Identification</h3>
+      <div class="form-group">
+        <div style="display:flex;flex-wrap:wrap;gap:6px" id="hazards">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="checkbox" value="Fall from height"> Fall from height</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="checkbox" value="Electrical shock"> Electrical shock</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="checkbox" value="Fire/Explosion"> Fire/Explosion</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="checkbox" value="Chemical exposure"> Chemical exposure</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="checkbox" value="Struck by objects"> Struck by objects</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="checkbox" value="Heat stress"> Heat stress</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="checkbox" value="Confined space"> Confined space</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="checkbox" value="Noise"> Noise</label>
+        </div>
+      </div>
+
+      <h3 style="margin:16px 0 8px;font-size:14px">PPE Required</h3>
+      <div class="form-group">
+        <div style="display:flex;flex-wrap:wrap;gap:6px" id="ppe">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="checkbox" value="Safety helmet"> 🪖 Safety helmet</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="checkbox" value="Safety boots"> 🥾 Safety boots</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="checkbox" value="Safety goggles"> 🥽 Safety goggles</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="checkbox" value="Gloves"> 🧤 Gloves</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="checkbox" value="High-vis vest"> 🦺 High-vis vest</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="checkbox" value="Harness"> Harness</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="checkbox" value="Ear plugs"> 🔇 Ear plugs</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="checkbox" value="Respirator"> 😷 Respirator</label>
+        </div>
+      </div>
+
+      <div class="form-group"><label>Workers (comma separated)</label><input class="form-input" id="tbmWorkers" placeholder="e.g. Ahmad, Raj, Lim, Ali"></div>
+      <div class="form-group"><label>Company</label><input class="form-input" id="tbmCompany" placeholder="e.g. ABC Contractors"></div>
+
+      <h3 style="margin:16px 0 8px;font-size:14px">Worker Feedback</h3>
+      <div id="feedbackArea">
+        <table class="checklist-table"><thead><tr><th>Question</th><th>Yes</th><th>No</th><th>N/A</th></tr></thead><tbody>
+          <tr><td class="item-text">Do you understand today's work scope?</td><td><div class="checklist-opts"><label><input type="radio" name="fb0" value="Yes"><span>Yes</span></label></div></td><td><div class="checklist-opts"><label><input type="radio" name="fb0" value="No"><span>No</span></label></div></td><td><div class="checklist-opts"><label><input type="radio" name="fb0" value="N/A"><span>N/A</span></label></div></td></tr>
+          <tr><td class="item-text">Are you aware of the hazards?</td><td><div class="checklist-opts"><label><input type="radio" name="fb1" value="Yes"><span>Yes</span></label></div></td><td><div class="checklist-opts"><label><input type="radio" name="fb1" value="No"><span>No</span></label></div></td><td><div class="checklist-opts"><label><input type="radio" name="fb1" value="N/A"><span>N/A</span></label></div></td></tr>
+          <tr><td class="item-text">Do you have the correct PPE?</td><td><div class="checklist-opts"><label><input type="radio" name="fb2" value="Yes"><span>Yes</span></label></div></td><td><div class="checklist-opts"><label><input type="radio" name="fb2" value="No"><span>No</span></label></div></td><td><div class="checklist-opts"><label><input type="radio" name="fb2" value="N/A"><span>N/A</span></label></div></td></tr>
+          <tr><td class="item-text">Is the work area safe to proceed?</td><td><div class="checklist-opts"><label><input type="radio" name="fb3" value="Yes"><span>Yes</span></label></div></td><td><div class="checklist-opts"><label><input type="radio" name="fb3" value="No"><span>No</span></label></div></td><td><div class="checklist-opts"><label><input type="radio" name="fb3" value="N/A"><span>N/A</span></label></div></td></tr>
+          <tr><td class="item-text">Emergency procedures understood?</td><td><div class="checklist-opts"><label><input type="radio" name="fb4" value="Yes"><span>Yes</span></label></div></td><td><div class="checklist-opts"><label><input type="radio" name="fb4" value="No"><span>No</span></label></div></td><td><div class="checklist-opts"><label><input type="radio" name="fb4" value="N/A"><span>N/A</span></label></div></td></tr>
+        </tbody></table>
+      </div>
+
+      <div class="form-group" style="margin-top:16px"><label>Photos</label>
+        <div class="photo-upload" onclick="document.getElementById('tbmPhotos').click()">📷 Upload photos<input type="file" id="tbmPhotos" accept="image/*" multiple></div>
+        <div class="photo-grid" id="tbmPhotoPreview"></div>
+      </div>
+      <div class="form-group"><label>Conductor Signature</label>
+        <div class="sig-pad"><canvas id="tbmSig"></canvas><button class="sig-clear" onclick="tbmSigPad.clear()">Clear</button></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('modalNew')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitTBM()">Submit TBM →</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+if (!initPage('tbm')) throw '';
+let allData = [], tbmSigPad;
+const user = Auth.get();
+const demoData = [
+  {id:'TBM-156',date:'2026-05-01',topic:'Working at Height',location:'Block A',conductor:'Ahmad',attendance:22,status:'Completed',company:'ABC'},
+  {id:'TBM-155',date:'2026-04-30',topic:'Electrical Safety',location:'Block B',conductor:'Raj',attendance:18,status:'Completed',company:'XYZ'},
+  {id:'TBM-154',date:'2026-04-29',topic:'PPE Usage',location:'Block C',conductor:'Lim',attendance:20,status:'In Review',company:'ABC'},
+  {id:'TBM-153',date:'2026-04-28',topic:'Fire Prevention',location:'Block D',conductor:'Ali',attendance:15,status:'Completed',company:'BuildCo'},
+  {id:'TBM-152',date:'2026-04-27',topic:'Housekeeping',location:'Block A',conductor:'Tan',attendance:19,status:'Completed',company:'ABC'},
+  {id:'TBM-151',date:'2026-04-26',topic:'Chemical Handling',location:'Block B',conductor:'Kumar',attendance:16,status:'Completed',company:'ChemSafe'},
+];
+
+// Auto-init signature when modal opens
+document.getElementById('modalNew').addEventListener('click', function(e) { if (e.target === this) closeModal('modalNew'); });
+setTimeout(() => { tbmSigPad = new SignaturePad('tbmSig'); setupPhotoUpload('tbmPhotos','tbmPhotoPreview'); }, 500);
+
+async function load() {
+  showLoad('Loading TBM...');
+  let d = await API.get('getTBM');
+  allData = (d && d.items) ? d.items : demoData;
+  renderTable(allData);
+  hideLoad();
+}
+function renderTable(items) {
+  document.getElementById('tbl').innerHTML = items.length ? items.map(r => `<tr>
+    <td style="color:var(--yellow);font-weight:600">${r.id}</td><td>${fmtDate(r.date)}</td><td>${r.topic}</td><td>${r.location}</td><td>${r.conductor}</td><td>${r.attendance}</td><td>${statusBadge(r.status)}</td>
+    <td><button class="btn btn-secondary btn-sm" onclick="toast('View TBM ${r.id}','info')">View</button></td>
+  </tr>`).join('') : '<tr><td colspan="8" class="empty">No records</td></tr>';
+}
+function filter() {
+  const topic = document.getElementById('fTopic').value;
+  const q = document.getElementById('fSearch').value.toLowerCase();
+  renderTable(allData.filter(r => (!topic || r.topic === topic) && (!q || Object.values(r).some(v => String(v).toLowerCase().includes(q)))));
+}
+async function submitTBM() {
+  const topic = document.getElementById('tbmTopic').value;
+  if (!topic) { toast('Select a topic','err'); return; }
+  const hazards = Array.from(document.querySelectorAll('#hazards input:checked')).map(c => c.value);
+  const ppe = Array.from(document.querySelectorAll('#ppe input:checked')).map(c => c.value);
+  const feedback = [0,1,2,3,4].map(i => { const s = document.querySelector(`input[name="fb${i}"]:checked`); return s ? s.value : ''; });
+  const data = { topic, date: document.getElementById('tbmDate').value, location: document.getElementById('tbmLoc').value, project: document.getElementById('tbmProject').value, description: document.getElementById('tbmDesc').value, workers: document.getElementById('tbmWorkers').value, company: document.getElementById('tbmCompany').value, hazards: JSON.stringify(hazards), ppe: JSON.stringify(ppe), feedback: JSON.stringify(feedback), conductor: user.username, signature: tbmSigPad && !tbmSigPad.isEmpty() ? tbmSigPad.toDataURL() : '' };
+  showLoad('Submitting TBM...');
+  const r = await API.post('submitTBM', data);
+  hideLoad();
+  if (r && r.success) { toast('TBM submitted!','ok'); closeModal('modalNew'); load(); } else toast(r?.error || 'Failed','err');
+}
+load();
+</script>
+</body>
+</html>

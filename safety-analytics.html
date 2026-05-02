@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Safety Inspection Analytics — BOSH CMS</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="config.js"></script>
+</head>
+<body>
+<div class="app">
+  <div class="main">
+    <div class="topbar"><h1><button class="mobile-menu" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button> Safety Inspection Analytics</h1><div class="topbar-actions"><select class="filter-select" id="period" onchange="load()"><option value="all">All Time</option><option value="month">This Month</option><option value="quarter">This Quarter</option></select></div></div>
+    <div class="content">
+      <div class="hero-banner"><div class="hero-icon" style="background:var(--green-dim)">🛡️</div><div class="hero-text"><h2>Safety Inspection Analytics</h2><p>Issue severity breakdown, contractor performance, resolution rates, and trending findings.</p></div></div>
+      <div class="stats-row">
+        <div class="stat c-green"><div class="stat-icon">🛡️</div><div class="stat-label">Total Inspections</div><div class="stat-value" data-v="89">0</div></div>
+        <div class="stat c-blue"><div class="stat-icon">✅</div><div class="stat-label">Close Rate</div><div class="stat-value" data-v="81" data-suf="%">0</div></div>
+        <div class="stat c-red"><div class="stat-icon">⚠️</div><div class="stat-label">Open Issues</div><div class="stat-value" data-v="14">0</div></div>
+        <div class="stat c-amber"><div class="stat-icon">📊</div><div class="stat-label">Avg Score</div><div class="stat-value" data-v="87" data-suf="/100">0</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><div class="card-header"><h3>Monthly Inspections & Close Rate</h3><div class="card-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Inspections</div><div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Close Rate</div></div></div><div class="chart-wrap"><canvas id="ch1"></canvas></div></div>
+        <div class="card"><div class="card-header"><h3>Issues by Severity</h3></div><div class="chart-wrap"><canvas id="ch2"></canvas></div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><div class="card-header"><h3>Issues by Status</h3></div><div class="chart-wrap"><canvas id="ch3"></canvas></div></div>
+        <div class="card"><div class="card-header"><h3>By Contractor</h3></div><div class="chart-wrap"><canvas id="ch4"></canvas></div></div>
+      </div>
+      <div class="table-card"><div class="table-bar"><h3>Top Findings</h3></div><table class="dt"><thead><tr><th>#</th><th>Finding</th><th>Count</th><th>Severity</th><th>Impact</th></tr></thead><tbody id="tblFindings"></tbody></table></div>
+    </div>
+  </div>
+</div>
+<script src="app.js"></script>
+<script>
+if (!initPage('safety-analytics')) throw '';
+let ch={};
+const D={
+  monthly:[{m:'Jan',n:8,r:75},{m:'Feb',n:10,r:78},{m:'Mar',n:12,r:80},{m:'Apr',n:14,r:82},{m:'May',n:16,r:85},{m:'Jun',n:11,r:83},{m:'Jul',n:18,r:88}],
+  bySev:{Critical:5,High:14,Medium:22,Low:18},
+  byStatus:{Open:14,Rectifying:8,Closed:67},
+  byContractor:{'ABC Contractors':22,'XYZ Pte Ltd':18,'BuildCo':15,'PowerTech':12,'WeldPro':10,'Others':12},
+  findings:[{f:'Missing barricade at opening',c:8,s:'High'},{f:'Improper PPE usage',c:7,s:'Medium'},{f:'Blocked emergency exit',c:5,s:'Critical'},{f:'Unsecured scaffolding',c:5,s:'High'},{f:'Expired fire extinguisher',c:4,s:'Medium'},{f:'Poor housekeeping',c:4,s:'Low'},{f:'No warning signs',c:3,s:'Medium'}]
+};
+async function load(){
+  showLoad('Loading...'); let d=await API.get('getSafetyAnalytics',{period:document.getElementById('period').value}); if(!d||!d.monthly) d=D; render(d); hideLoad();
+}
+function render(d){
+  initReveal(); initCountUps();
+  if(ch.c1)ch.c1.destroy();
+  ch.c1=new Chart(document.getElementById('ch1'),{type:'bar',data:{labels:d.monthly.map(m=>m.m),datasets:[{label:'Inspections',data:d.monthly.map(m=>m.n),backgroundColor:C.green.bg,borderColor:C.green.border,borderWidth:1,yAxisID:'y'},{label:'Close Rate',data:d.monthly.map(m=>m.r),type:'line',borderColor:C.blue.border,backgroundColor:'transparent',borderWidth:2,pointRadius:4,pointBackgroundColor:C.blue.border,yAxisID:'y1'}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,position:'left'},y1:{beginAtZero:true,max:100,position:'right',grid:{drawOnChartArea:false},ticks:{callback:v=>v+'%'}}}}});
+  if(ch.c2)ch.c2.destroy();
+  ch.c2=new Chart(document.getElementById('ch2'),{type:'doughnut',data:{labels:Object.keys(d.bySev),datasets:[{data:Object.values(d.bySev),backgroundColor:[C.red.solid,C.amber.solid,C.yellow.solid,C.green.solid],borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:true,position:'right',labels:{boxWidth:8,padding:10,font:{size:11}}}}}});
+  if(ch.c3)ch.c3.destroy();
+  ch.c3=new Chart(document.getElementById('ch3'),{type:'doughnut',data:{labels:Object.keys(d.byStatus),datasets:[{data:Object.values(d.byStatus),backgroundColor:[C.red.solid,C.yellow.solid,C.green.solid],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:true,position:'right',labels:{boxWidth:8,padding:10,font:{size:11}}}}}});
+  if(ch.c4)ch.c4.destroy();
+  ch.c4=new Chart(document.getElementById('ch4'),{type:'bar',data:{labels:Object.keys(d.byContractor),datasets:[{data:Object.values(d.byContractor),backgroundColor:C.green.bg,borderColor:C.green.border,borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',scales:{x:{beginAtZero:true},y:{grid:{display:false}}}}});
+  document.getElementById('tblFindings').innerHTML=d.findings.map((f,i)=>`<tr><td>${i+1}</td><td style="font-weight:500">${f.f}</td><td data-v="${f.c}">0</td><td>${sevBadge(f.s)}</td><td><div class="progress" style="width:100px"><div class="progress-bar ${f.s==='Critical'?'red':f.s==='High'?'yellow':'green'}" style="width:${f.c*12}%"></div></div></td></tr>`).join('');
+  initCountUps();
+}
+load();
+</script>
+</body>
+</html>

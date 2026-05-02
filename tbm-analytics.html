@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>TBM Analytics — BOSH CMS</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="config.js"></script>
+</head>
+<body>
+<div class="app">
+  <div class="main">
+    <div class="topbar"><h1><button class="mobile-menu" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button> TBM Analytics</h1><div class="topbar-actions"><select class="filter-select" id="period" onchange="load()"><option value="all">All Time</option><option value="month">This Month</option><option value="quarter">This Quarter</option></select></div></div>
+    <div class="content">
+      <div class="hero-banner"><div class="hero-icon" style="background:var(--purple-dim)">👷</div><div class="hero-text"><h2>Toolbox Meeting Analytics</h2><p>Session frequency, attendance trends, topic coverage, and worker participation across projects.</p></div></div>
+      <div class="stats-row">
+        <div class="stat c-purple"><div class="stat-icon">👷</div><div class="stat-label">Total TBM</div><div class="stat-value" data-v="156">0</div></div>
+        <div class="stat c-blue"><div class="stat-icon">📅</div><div class="stat-label">This Month</div><div class="stat-value" data-v="28">0</div></div>
+        <div class="stat c-green"><div class="stat-icon">👥</div><div class="stat-label">Avg Attendance</div><div class="stat-value" data-v="18">0</div></div>
+        <div class="stat c-amber"><div class="stat-icon">✅</div><div class="stat-label">Completion</div><div class="stat-value" data-v="92" data-suf="%">0</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><div class="card-header"><h3>Monthly Sessions & Attendance</h3><div class="card-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>Sessions</div><div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div>Avg Attend.</div></div></div><div class="chart-wrap"><canvas id="ch1"></canvas></div></div>
+        <div class="card"><div class="card-header"><h3>Topic Distribution</h3></div><div class="chart-wrap"><canvas id="ch2"></canvas></div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><div class="card-header"><h3>By Project</h3></div><div class="chart-wrap"><canvas id="ch3"></canvas></div></div>
+        <div class="card"><div class="card-header"><h3>Workers Reached (Cumulative)</h3></div><div class="chart-wrap"><canvas id="ch4"></canvas></div></div>
+      </div>
+      <div class="table-card"><div class="table-bar"><h3>Topic Coverage</h3></div><table class="dt"><thead><tr><th>Topic</th><th>Sessions</th><th>% Total</th><th>Coverage</th></tr></thead><tbody id="tblTopic"></tbody></table></div>
+    </div>
+  </div>
+</div>
+<script src="app.js"></script>
+<script>
+if (!initPage('tbm-analytics')) throw '';
+let ch={};
+const D={
+  monthly:[{m:'Jan',s:12,a:16},{m:'Feb',s:15,a:17},{m:'Mar',s:18,a:19},{m:'Apr',s:22,a:18},{m:'May',s:25,a:20},{m:'Jun',s:28,a:17},{m:'Jul',s:30,a:18}],
+  byTopic:{'Working at Height':28,'Electrical Safety':24,'Fire Prevention':22,'PPE Usage':20,'Chemical Handling':18,Housekeeping:16,'Heat Stress':14,Other:14},
+  byProject:{'Block A Residential':48,'Block B Commercial':38,'Block C Mixed':35,'Block D Industrial':35}
+};
+async function load(){
+  showLoad('Loading...'); let d=await API.get('getTBMAnalytics',{period:document.getElementById('period').value}); if(!d||!d.monthly) d=D; render(d); hideLoad();
+}
+function render(d){
+  initReveal(); initCountUps();
+  if(ch.c1)ch.c1.destroy();
+  ch.c1=new Chart(document.getElementById('ch1'),{type:'bar',data:{labels:d.monthly.map(m=>m.m),datasets:[{label:'Sessions',data:d.monthly.map(m=>m.s),backgroundColor:C.purple.bg,borderColor:C.purple.border,borderWidth:1,yAxisID:'y'},{label:'Avg Attendance',data:d.monthly.map(m=>m.a),type:'line',borderColor:C.cyan.border,backgroundColor:'transparent',borderWidth:2,pointRadius:4,pointBackgroundColor:C.cyan.border,yAxisID:'y1'}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,position:'left'},y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false}}}}});
+  if(ch.c2)ch.c2.destroy();
+  const pal=[C.blue.solid,C.purple.solid,C.red.solid,C.yellow.solid,C.green.solid,C.cyan.solid,C.amber.solid,C.gray.solid];
+  ch.c2=new Chart(document.getElementById('ch2'),{type:'doughnut',data:{labels:Object.keys(d.byTopic),datasets:[{data:Object.values(d.byTopic),backgroundColor:pal,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:true,position:'right',labels:{boxWidth:7,padding:5,font:{size:10}}}}}});
+  if(ch.c3)ch.c3.destroy();
+  ch.c3=new Chart(document.getElementById('ch3'),{type:'bar',data:{labels:Object.keys(d.byProject),datasets:[{data:Object.values(d.byProject),backgroundColor:[C.purple.bg,C.blue.bg,C.green.bg,C.amber.bg],borderColor:[C.purple.border,C.blue.border,C.green.border,C.amber.border],borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}}}});
+  if(ch.c4)ch.c4.destroy();
+  let cum=0; const cumData=d.monthly.map(m=>{cum+=m.s*m.a;return cum;});
+  const ctx4=document.getElementById('ch4').getContext('2d');
+  ch.c4=new Chart(ctx4,{type:'line',data:{labels:d.monthly.map(m=>m.m),datasets:[{label:'Workers Reached',data:cumData,borderColor:C.purple.border,backgroundColor:gradient(ctx4,C.purple),fill:true,borderWidth:2,pointRadius:4,pointBackgroundColor:C.purple.border}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}}}});
+  const total=Object.values(d.byTopic).reduce((a,b)=>a+b,0);
+  document.getElementById('tblTopic').innerHTML=Object.entries(d.byTopic).map(([t,c])=>{const p=Math.round(c/total*100);return `<tr><td style="font-weight:500">${t}</td><td>${c}</td><td>${p}%</td><td><div class="progress" style="width:140px"><div class="progress-bar yellow" style="width:${p*2.5}%"></div></div></td></tr>`;}).join('');
+}
+load();
+</script>
+</body>
+</html>
