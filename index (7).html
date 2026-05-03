@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>BOSH CMS</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+/* ============================================
+   BOSH CMS — ALL-IN-ONE — Light Theme
+   ============================================ */
+:root{--bg:#F3F4F8;--white:#fff;--card:#fff;--hover:#F8F9FB;--input:#F7F8FA;--navy:#1E3A5F;--navy-d:#152C4A;--border:#E2E8F0;--border-d:#CBD5E1;--txt:#1E293B;--txt2:#64748B;--txt3:#94A3B8;--yellow:#FBBF24;--yellow-bg:#FEF9E7;--green:#10B981;--green-bg:#ECFDF5;--red:#EF4444;--red-bg:#FEF2F2;--blue:#3B82F6;--blue-bg:#EFF6FF;--orange:#F97316;--orange-bg:#FFF7ED;--purple:#8B5CF6;--sidebar-w:250px;--radius:8px;--radius-lg:12px;--shadow:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 4px 12px rgba(0,0,0,.08)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px;scroll-behavior:smooth}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--bg);color:var(--txt);line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--navy);text-decoration:none}
+button{cursor:pointer;font-family:inherit;border:none;background:none}
+input,select,textarea{font-family:inherit;font-size:inherit}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border-d);border-radius:3px}
+
+/* Page sections - only active one is visible */
+.page{display:none}.page.active{display:block}
+
+/* Login */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.login-box{width:100%;max-width:400px;padding:20px}
+.login-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:36px 28px;box-shadow:var(--shadow-md);animation:fadeUp .4s ease-out}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.login-brand{text-align:center;margin-bottom:24px}
+.login-brand .logo-box{width:48px;height:48px;background:var(--navy);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:10px}
+.login-brand h1{font-size:20px;font-weight:700;color:var(--navy)}
+.login-brand p{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:2px;margin-top:3px}
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.fi{width:100%;padding:10px 12px;background:var(--input);border:1px solid var(--border);border-radius:var(--radius);color:var(--txt);font-size:14px;outline:none;transition:border .2s}
+.fi:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,58,95,.08)}
+.fi::placeholder{color:var(--txt3)}
+select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%2364748B'%3E%3Cpath d='M5 7L0 2h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+textarea.fi{resize:vertical;min-height:70px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:9px 18px;border-radius:var(--radius);font-size:13px;font-weight:600;transition:all .15s;border:1px solid transparent}
+.btn-p{background:var(--navy);color:#fff}.btn-p:hover{background:var(--navy-d)}
+.btn-p:disabled{opacity:.5;cursor:not-allowed}
+.btn-y{background:var(--yellow);color:var(--navy-d);font-weight:700}.btn-y:hover{background:#E5A800}
+.btn-s{background:var(--white);color:var(--txt2);border:1px solid var(--border)}.btn-s:hover{background:var(--hover);color:var(--txt)}
+.btn-d{background:var(--red-bg);color:var(--red)}.btn-d:hover{background:var(--red);color:#fff}
+.btn-g{background:var(--green-bg);color:var(--green)}.btn-g:hover{background:var(--green);color:#fff}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-block{width:100%}
+.login-err{background:var(--red-bg);color:var(--red);padding:10px;border-radius:var(--radius);font-size:13px;margin-bottom:12px;display:none;border:1px solid rgba(239,68,68,.15)}
+.demo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+.demo-grid .dlabel{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--txt3);grid-column:1/-1}
+.demo-btn{padding:7px;background:var(--input);border:1px solid var(--border);border-radius:var(--radius);color:var(--txt2);font-size:11px;text-align:center}.demo-btn:hover{border-color:var(--navy);color:var(--navy)}
+.demo-btn small{display:block;font-size:9px;color:var(--txt3)}
+
+/* App layout */
+.app{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);background:var(--navy-d);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100;transition:transform .3s}
+.sb-brand{padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06)}
+.sb-brand .slogo{font-size:16px;color:#fff;font-weight:700}.sb-brand .slogo span{color:var(--yellow)}
+.sb-nav{flex:1;padding:8px;overflow-y:auto}
+.ng{margin-bottom:12px}
+.ng-t{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);padding:0 10px 3px;font-weight:600}
+.nl{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--radius);color:rgba(255,255,255,.55);font-size:13px;font-weight:500;transition:all .1s;cursor:pointer;margin-bottom:1px}
+.nl:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)}
+.nl.act{background:var(--yellow);color:var(--navy-d);font-weight:700}
+.nl .ni{width:16px;text-align:center;font-size:13px}
+.sb-foot{padding:10px;border-top:1px solid rgba(255,255,255,.06)}
+.sb-user{display:flex;align-items:center;gap:8px;padding:6px}
+.u-av{width:30px;height:30px;border-radius:50%;background:var(--yellow);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--navy-d)}
+.u-name{font-size:11px;font-weight:600;color:#fff}
+.u-role{font-size:9px;color:rgba(255,255,255,.35)}
+.u-out{margin-left:auto;padding:4px 8px;font-size:10px;color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius)}.u-out:hover{color:#fff;border-color:var(--red)}
+
+.main-area{flex:1;margin-left:var(--sidebar-w);min-height:100vh}
+.topbar{position:sticky;top:0;z-index:50;background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.topbar h1{font-size:15px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:8px}
+.top-acts{display:flex;gap:6px;align-items:center}
+.content{padding:18px 24px 40px}
+
+/* Stats */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
+.stat{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;position:relative;overflow:hidden;box-shadow:var(--shadow);opacity:0;transform:translateY(10px);transition:opacity .35s,transform .35s}
+.stat.show{opacity:1;transform:none}
+.stat::before{content:'';position:absolute;bottom:0;left:0;right:0;height:3px}
+.stat.cy::before{background:var(--yellow)}.stat.cb::before{background:var(--blue)}.stat.cg::before{background:var(--green)}.stat.co::before{background:var(--orange)}.stat.cr::before{background:var(--red)}
+.stat-v{font-size:30px;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
+.stat-l{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-top:2px}
+
+/* Tabs */
+.tab-group{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+.tab-b{padding:6px 14px;background:var(--white);border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:600;color:var(--txt2)}.tab-b:hover{border-color:var(--navy);color:var(--navy)}.tab-b.act{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* Cards */
+.card-box{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);margin-bottom:8px;overflow:hidden}
+.card-box .cb-row{padding:14px 18px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:background .1s}.cb-row:hover{background:var(--hover)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+.chart-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow);opacity:0;transform:translateY(10px);transition:opacity .35s .06s,transform .35s .06s}
+.chart-card.show{opacity:1;transform:none}
+.chart-card h3{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:12px}
+.chart-wrap{height:200px;position:relative}
+.chart-wrap canvas{width:100%!important;height:100%!important}
+.legend{display:flex;gap:10px;margin-bottom:10px}.leg-i{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--txt2)}.leg-d{width:6px;height:6px;border-radius:50%}
+
+/* Table */
+.tbl-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow);margin-bottom:18px;opacity:0;transform:translateY(10px);transition:opacity .35s .1s,transform .35s .1s}.tbl-card.show{opacity:1;transform:none}
+.tbl-bar{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px}
+.tbl-bar h3{font-size:13px;font-weight:600;color:var(--navy)}
+table.dt{width:100%}table.dt thead{background:var(--bg)}
+table.dt th{padding:8px 12px;font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt3);font-weight:700;text-align:left;border-bottom:1px solid var(--border)}
+table.dt td{padding:9px 12px;font-size:12px;border-bottom:1px solid var(--border);color:var(--txt2)}
+table.dt tbody tr:hover{background:var(--hover)}table.dt tbody tr:last-child td{border-bottom:none}
+
+/* Badges */
+.badge{display:inline-block;padding:2px 9px;border-radius:16px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.b-g{background:var(--green-bg);color:var(--green)}.b-o{background:var(--orange-bg);color:var(--orange)}.b-r{background:var(--red-bg);color:var(--red)}.b-b{background:var(--blue-bg);color:var(--blue)}.b-gr{background:#F1F5F9;color:#64748B}
+
+/* Filters */
+.filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.fsel{padding:6px 26px 6px 10px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);color:var(--txt2);font-size:11px;outline:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%2364748B'%3E%3Cpath d='M5 7L0 2h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+.fsel:focus{border-color:var(--navy)}
+.finp{padding:6px 10px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);color:var(--txt);font-size:11px;width:180px;outline:none}.finp:focus{border-color:var(--navy)}
+
+/* Form sections (PTW form) */
+.fsec{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.fsec h3{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.fsec h3 .sn{width:22px;height:22px;background:var(--navy);color:#fff;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:10px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+
+/* Checklist */
+.cl-tbl{width:100%;border-collapse:collapse}
+.cl-tbl th{padding:8px 10px;font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--txt3);font-weight:700;text-align:center;border-bottom:2px solid var(--border);background:var(--bg)}
+.cl-tbl th:first-child{text-align:left;width:50%}
+.cl-tbl td{padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle}
+.cl-tbl td:first-child{color:var(--txt)}
+.cl-o{display:flex;justify-content:center}
+.cl-o label{display:flex;align-items:center;gap:3px;padding:4px 10px;cursor:pointer;font-size:11px;font-weight:600;color:var(--txt3);border:1px solid var(--border);transition:all .1s}
+.cl-o label:first-child{border-radius:var(--radius) 0 0 var(--radius)}
+.cl-o label:last-child{border-radius:0 var(--radius) var(--radius) 0}
+.cl-o label:not(:first-child){border-left:none}
+.cl-o input[type="radio"]{display:none}
+.cl-o label:has(input:checked){background:var(--navy);color:#fff;border-color:var(--navy)}
+.cl-warn{background:var(--orange-bg);border:1px solid rgba(249,115,22,.15);color:var(--orange);padding:8px 12px;border-radius:var(--radius);font-size:11px;margin-bottom:10px;font-weight:500}
+
+/* GPS bar */
+.gps-bar{border-radius:var(--radius);padding:9px 12px;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;margin-bottom:10px}
+
+/* Signature */
+.sig-pad{border:1px dashed var(--border-d);border-radius:var(--radius);background:var(--input);height:110px;position:relative;cursor:crosshair}
+.sig-pad canvas{width:100%;height:100%;border-radius:var(--radius)}
+.sig-clr{position:absolute;top:5px;right:5px;font-size:10px;padding:2px 7px;background:var(--white);border:1px solid var(--border);border-radius:4px;color:var(--txt3)}
+
+/* Photo */
+.photo-up{border:2px dashed var(--border);border-radius:var(--radius);padding:16px;text-align:center;color:var(--txt3);font-size:11px;cursor:pointer}.photo-up:hover{border-color:var(--navy)}.photo-up input{display:none}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;margin-top:6px}
+.photo-thumb{width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border)}
+
+/* Empty */
+.empty{text-align:center;padding:50px 20px;color:var(--txt3)}.empty .e-icon{font-size:36px;margin-bottom:10px}.empty h3{font-size:14px;color:var(--txt2);margin-bottom:4px}
+
+/* Progress */
+.progress{height:4px;background:var(--bg);border-radius:2px;overflow:hidden}.progress-fill{height:100%;border-radius:2px;transition:width .8s}
+
+/* Toast */
+.toast-wrap{position:fixed;top:14px;right:14px;z-index:9999;display:flex;flex-direction:column;gap:5px}
+.toast-msg{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:9px 14px;font-size:12px;box-shadow:var(--shadow-md);animation:tIn .2s;display:flex;align-items:center;gap:6px}
+.toast-msg.ok{border-left:3px solid var(--green)}.toast-msg.err{border-left:3px solid var(--red)}.toast-msg.warn{border-left:3px solid var(--orange)}.toast-msg.info{border-left:3px solid var(--blue)}
+@keyframes tIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+
+/* Loading */
+.ld-overlay{position:fixed;inset:0;background:rgba(255,255,255,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9998;transition:opacity .2s}
+.ld-overlay.hide{opacity:0;pointer-events:none}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ld-overlay p{margin-top:10px;font-size:12px;color:var(--txt2)}
+
+/* Hero */
+.hero{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;display:flex;align-items:center;gap:16px;margin-bottom:18px;box-shadow:var(--shadow);opacity:0;transform:translateY(10px);transition:opacity .35s,transform .35s}.hero.show{opacity:1;transform:none}
+.hero-ic{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.hero h2{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:2px}
+.hero p{font-size:12px;color:var(--txt2)}
+
+/* Mobile */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}.sidebar.open{transform:none}
+  .main-area{margin-left:0}.content{padding:12px}
+  .stats-row{grid-template-columns:1fr 1fr}.form-row{grid-template-columns:1fr}
+  .grid-2{grid-template-columns:1fr}
+  .mob-btn{display:flex!important}
+}
+.mob-btn{display:none!important;align-items:center;justify-content:center;width:30px;height:30px;font-size:16px;color:var(--navy)}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN PAGE ============ -->
+<div class="page active" id="pg-login">
+  <div class="login-page">
+    <div class="login-box">
+      <div class="login-card">
+        <div class="login-brand"><div class="logo-box">🏗️</div><h1>BOSH CMS</h1><p>Construction Management System</p></div>
+        <div class="login-err" id="loginErr">Invalid username or password</div>
+        <div class="fg"><label>Username</label><input class="fi" id="inUser" placeholder="Enter username"></div>
+        <div class="fg"><label>Password</label><input class="fi" id="inPass" type="password" placeholder="Enter password"></div>
+        <button class="btn btn-p btn-block" id="loginBtn" onclick="doLogin()">Sign In →</button>
+        <div class="demo-grid">
+          <div class="dlabel">Quick Demo Access</div>
+          <button class="demo-btn" onclick="qlogin('supervisor','pass123')">supervisor<small>Supervisor</small></button>
+          <button class="demo-btn" onclick="qlogin('pic','pass123')">pic<small>PIC</small></button>
+          <button class="demo-btn" onclick="qlogin('safety','pass123')">safety<small>Safety</small></button>
+          <button class="demo-btn" onclick="qlogin('pm','pass123')">pm<small>PM</small></button>
+          <button class="demo-btn" onclick="qlogin('qaqc','pass123')">qaqc<small>QAQC</small></button>
+          <button class="demo-btn" onclick="qlogin('admin','admin123')">admin<small>Admin</small></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div class="page" id="pg-app">
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sb-brand"><div class="slogo">🏗️ <span>BOSH</span> CMS</div></div>
+      <nav class="sb-nav">
+        <div class="ng"><div class="ng-t">Overview</div>
+          <div class="nl act" data-pg="dashboard"><span class="ni">📊</span>Dashboard</div>
+        </div>
+        <div class="ng"><div class="ng-t">HSE Safety</div>
+          <div class="nl" data-pg="ptw-list"><span class="ni">📋</span>PTW</div>
+          <div class="nl" data-pg="tbm"><span class="ni">👷</span>Toolbox Meeting</div>
+          <div class="nl" data-pg="safety"><span class="ni">🛡️</span>Safety Inspection</div>
+        </div>
+        <div class="ng"><div class="ng-t">Quality</div>
+          <div class="nl" data-pg="qaqc"><span class="ni">🔍</span>Quality Inspection</div>
+          <div class="nl" data-pg="defect"><span class="ni">🐛</span>Defect Management</div>
+        </div>
+        <div class="ng"><div class="ng-t">Analytics</div>
+          <div class="nl" data-pg="ptw-analytics"><span class="ni">📈</span>PTW Analytics</div>
+        </div>
+        <div class="ng"><div class="ng-t">System</div>
+          <div class="nl" data-pg="admin"><span class="ni">⚙️</span>Admin</div>
+        </div>
+      </nav>
+      <div class="sb-foot"><div class="sb-user"><div class="u-av" id="uAvatar">SU</div><div><div class="u-name" id="uName">supervisor</div><div class="u-role" id="uRole">Supervisor</div></div><button class="u-out" onclick="doLogout()">Logout</button></div></div>
+    </aside>
+    <div class="main-area">
+      <div class="topbar">
+        <h1><button class="mob-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button><span id="topTitle">Dashboard</span></h1>
+        <div class="top-acts" id="topActs"></div>
+      </div>
+      <div class="content" id="mainContent"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================
+   BOSH CMS — ALL-IN-ONE JAVASCRIPT
+   ============================================ */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzmpyJyKnLbm481LWEoT_KEhjO42_TksJDdErnNf9VvINrIKW2YOM9CLqP49XOQ53xdWw/exec';
+const DEMO_USERS = {supervisor:{pw:'pass123',role:'Supervisor'},pic:{pw:'pass123',role:'PIC'},safety:{pw:'pass123',role:'Safety Officer'},pm:{pw:'pass123',role:'Project Manager'},qaqc:{pw:'pass123',role:'QAQC'},admin:{pw:'admin123',role:'Administrator'}};
+
+// ---- STATE ----
+let USER = null, allPTW = [], sigPad = null, gpsCoords = '', workerCount = 0;
+
+// ---- AUTH ----
+function getUser() { const u = sessionStorage.getItem('cms_user'); return u ? JSON.parse(u) : null; }
+function hasRole(...r) { return USER && r.some(x => USER.role.toLowerCase().includes(x.toLowerCase())); }
+function doLogout() { sessionStorage.removeItem('cms_user'); USER = null; showPage('pg-login'); }
+function qlogin(u,p) { document.getElementById('inUser').value=u; document.getElementById('inPass').value=p; doLogin(); }
+
+async function doLogin() {
+  const btn = document.getElementById('loginBtn'), errEl = document.getElementById('loginErr');
+  const username = document.getElementById('inUser').value.trim().toLowerCase();
+  const password = document.getElementById('inPass').value;
+  if (!username || !password) return;
+  btn.disabled = true; btn.textContent = 'Signing in...'; errEl.style.display = 'none';
+  let ok = false, role = '';
+  try { const r = await apiFetch('login', {username, password}); if (r && r.success) { ok = true; role = r.role; } } catch(e) {}
+  if (!ok) { const dm = DEMO_USERS[username]; if (dm && dm.pw === password) { ok = true; role = dm.role; } }
+  if (ok) { USER = {username, role}; sessionStorage.setItem('cms_user', JSON.stringify(USER)); enterApp(); }
+  else { errEl.style.display = 'block'; }
+  btn.disabled = false; btn.textContent = 'Sign In →';
+}
+
+// ---- API ----
+async function apiFetch(action, params = {}) {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    const url = new URL(GAS_URL); url.searchParams.set('action', action);
+    Object.entries(params).forEach(([k,v]) => { if (v !== undefined && v !== '') url.searchParams.set(k, String(v)); });
+    const r = await fetch(url, {signal: ctrl.signal}); clearTimeout(t);
+    return await r.json();
+  } catch(e) { return null; }
+}
+async function apiPost(action, data = {}) {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 15000);
+    const r = await fetch(GAS_URL, {signal: ctrl.signal, method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify({action,...data})});
+    clearTimeout(t); return await r.json();
+  } catch(e) { return null; }
+}
+
+// ---- UI HELPERS ----
+function showPage(id) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function toast(msg, type='info') {
+  let w = document.querySelector('.toast-wrap');
+  if (!w) { w = document.createElement('div'); w.className = 'toast-wrap'; document.body.appendChild(w); }
+  const t = document.createElement('div'); t.className = 'toast-msg ' + type; t.textContent = msg; w.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 200); }, 3500);
+}
+function showLoad(txt) {
+  let l = document.querySelector('.ld-overlay');
+  if (!l) { l = document.createElement('div'); l.className = 'ld-overlay'; l.innerHTML = '<div class="spinner"></div><p></p>'; document.body.appendChild(l); }
+  l.classList.remove('hide'); l.querySelector('p').textContent = txt || 'Loading...';
+}
+function hideLoad() { const l = document.querySelector('.ld-overlay'); if (l) l.classList.add('hide'); }
+function badge(s) {
+  const l = (s||'').toLowerCase();
+  if (['active','approved','completed','pass'].includes(l)) return `<span class="badge b-g">${s}</span>`;
+  if (l === 'closed') return `<span class="badge b-b">${s}</span>`;
+  if (l.includes('pending') || l === 'in progress' || l === 'rectifying') return `<span class="badge b-o">${s}</span>`;
+  if (['expired','fail','rejected','revoked'].includes(l)) return `<span class="badge b-r">${s}</span>`;
+  return `<span class="badge b-gr">${s}</span>`;
+}
+function fDate(d) { if (!d) return '-'; try { return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); } catch(e) { return d; } }
+function initReveal() {
+  const obs = new IntersectionObserver(entries => { entries.forEach((e,i) => { if (e.isIntersecting) { setTimeout(() => e.target.classList.add('show'), i*40); obs.unobserve(e.target); } }); }, {threshold:.05});
+  document.querySelectorAll('.stat,.chart-card,.tbl-card,.hero').forEach(el => obs.observe(el));
+}
+function countUp(el, target, dur=900) {
+  const start = performance.now(); const isF = target%1!==0;
+  (function tick(now) { const p = Math.min((now-start)/dur,1); const ease = 1-Math.pow(1-p,3); el.textContent = isF ? (target*ease).toFixed(1) : Math.floor(target*ease).toLocaleString(); if (p<1) requestAnimationFrame(tick); })(start);
+}
+function initCountUps() {
+  const obs = new IntersectionObserver(entries => { entries.forEach(e => { if (e.isIntersecting) { countUp(e.target, parseFloat(e.target.dataset.v)); obs.unobserve(e.target); } }); }, {threshold:.3});
+  document.querySelectorAll('[data-v]').forEach(el => obs.observe(el));
+}
+
+// ---- CHART DEFAULTS ----
+function initChart() {
+  if (typeof Chart === 'undefined') return;
+  Chart.defaults.color = '#94A3B8'; Chart.defaults.borderColor = '#E2E8F0';
+  Chart.defaults.font.family = "'IBM Plex Sans',sans-serif"; Chart.defaults.font.size = 10;
+  Chart.defaults.plugins.legend.display = false;
+  Chart.defaults.plugins.tooltip.backgroundColor = '#1E3A5F';
+  Chart.defaults.scale.grid = {color:'#F1F5F9'};
+  Chart.defaults.elements.bar.borderRadius = 3;
+  Chart.defaults.elements.line.tension = .35;
+  Chart.defaults.animation.duration = 800;
+}
+const CC = {
+  y:{bg:'rgba(251,191,36,.12)',b:'#FBBF24',s:'#FBBF24'}, bl:{bg:'rgba(59,130,246,.12)',b:'#3B82F6',s:'#3B82F6'},
+  g:{bg:'rgba(16,185,129,.12)',b:'#10B981',s:'#10B981'}, r:{bg:'rgba(239,68,68,.12)',b:'#EF4444',s:'#EF4444'},
+  p:{bg:'rgba(139,92,246,.12)',b:'#8B5CF6',s:'#8B5CF6'}, o:{bg:'rgba(249,115,22,.12)',b:'#F97316',s:'#F97316'},
+  n:{bg:'rgba(30,58,95,.08)',b:'#1E3A5F',s:'#1E3A5F'}
+};
+function grad(ctx,c){const g=ctx.createLinearGradient(0,0,0,200);g.addColorStop(0,c.bg);g.addColorStop(1,'rgba(255,255,255,0)');return g;}
+
+// ---- DEMO DATA ----
+const DEMO_PTW = [
+  {id:'PTW-005',type:'Hot Work',location:'Block A L5',status:'Active',startDate:'2026-05-01T08:00',endDate:'2026-05-03T17:00',submittedBy:'supervisor',pic:'pic',company:'ABC Contractors',workers:'Ahmad, Raj',project:'Block A',description:'Welding on steel beams',checklist:'[]',approvals:'PIC:pic:2026-05-01T09:00|EHS:safety:2026-05-01T10:00|PM:pm:2026-05-01T11:00'},
+  {id:'PTW-004',type:'Confined Space',location:'Block B B1',status:'Pending PIC',startDate:'2026-04-30T07:00',endDate:'2026-05-01T16:00',submittedBy:'supervisor',pic:'pic',company:'XYZ Pte Ltd',workers:'Lim, Wong',project:'Block B',description:'Tank cleaning',checklist:'[]',approvals:''},
+  {id:'PTW-003',type:'Electrical',location:'Block C L3',status:'Closed',startDate:'2026-04-28T08:00',endDate:'2026-04-29T17:00',submittedBy:'supervisor',pic:'pic',company:'PowerTech',workers:'Samy, Ravi',project:'Block C',description:'Cable tray installation',checklist:'[]',approvals:'PIC:pic:2026-04-28T09:00|EHS:safety:2026-04-28T10:00|PM:pm:2026-04-28T11:00'},
+  {id:'PTW-002',type:'Working at Height',location:'Block A Roof',status:'Rejected',startDate:'2026-04-26T07:00',endDate:'2026-04-27T16:00',submittedBy:'supervisor',pic:'pic',company:'HeightSafe',workers:'Ali, Tan',project:'Block A',description:'Roof waterproofing',checklist:'[]',approvals:'',rejectionReason:'Incomplete risk assessment'},
+  {id:'PTW-001',type:'General',location:'Block D G',status:'Closed',startDate:'2026-04-24T08:00',endDate:'2026-04-25T17:00',submittedBy:'supervisor',pic:'pic',company:'BuildCo',workers:'Kumar, Das',project:'Block D',description:'General maintenance',checklist:'[]',approvals:'PIC:pic:2026-04-24T09:00|EHS:safety:2026-04-24T10:00|PM:pm:2026-04-24T11:00'},
+];
+const DEMO_CL = {
+  'Hot Work':['Workers wearing required PPE (helmet, boots, gloves, etc)','Safe means of access to work area provided','Material/equipment placed at least 1m from building edges','Materials inspected by trade supervisor and free of damage','Electrical tools inspected and in good condition','Adequate lighting provided at work area','Fire extinguisher available within 5m of hot work','Gas test conducted before commencement','Fire watch assigned during and 30 min after work','Combustible materials removed or protected','Welding screens/blankets in place','Spark containment measures implemented'],
+  'Confined Space':['Workers wearing required PPE','Safe means of access provided','Atmospheric testing conducted (O2, LEL, H2S, CO)','Ventilation equipment operational','Rescue equipment at entry point','Communication system established','Entry permit displayed','Standby person assigned','Emergency procedures communicated'],
+  'Electrical':['Workers wearing required PPE','Lock Out Tag Out (LOTO) applied','Voltage tested — confirmed zero energy','Insulated tools being used','Circuit identified and isolated','Warning signs posted','Qualified electrician supervising'],
+  'Excavation':['Workers wearing required PPE','Underground services located and marked','Shoring/benching in place','Barricades around excavation','Ladder access provided','Spoil heap min 1m from edge','Water management plan in place'],
+  'Working at Height':['Workers wearing required PPE (helmet, boots, harness, etc)','Safe means of access to work area provided','Material/equipment placed at least 1m from building edges','Materials inspected by trade supervisor — free of damage','Electrical tools inspected and in good condition','Adequate lighting at work area','Secured lifelines with padding provided','Barricades erected to prevent fall from height','Torch light for foremen and supervisor','No incompatible work in the vicinity','Standing supervision until work completion','Name of Supervisor assigned for night work:'],
+  'General':['Workers wearing required PPE (helmet, boots, harness, gloves, etc)','Safe means of access to work area provided','Material/equipment placed at least 1m from building edges','Materials inspected by trade supervisor — free of damage','Electrical tools inspected and in good condition','Adequate lighting at work area','Secured lifelines with padding provided','Barricades erected to prevent fall from height','Torch light for foremen and supervisor','No incompatible work in the vicinity','Standing supervision until work completion','Name of Supervisor assigned for night work:']
+};
+
+// ---- NAV ----
+function enterApp() {
+  USER = getUser();
+  if (!USER) { showPage('pg-login'); return; }
+  showPage('pg-app');
+  document.getElementById('uAvatar').textContent = USER.username.substring(0,2).toUpperCase();
+  document.getElementById('uName').textContent = USER.username;
+  document.getElementById('uRole').textContent = USER.role;
+  initChart();
+  // Nav clicks
+  document.querySelectorAll('.nl[data-pg]').forEach(el => el.addEventListener('click', () => goTo(el.dataset.pg)));
+  goTo('dashboard');
+}
+function goTo(pg) {
+  document.querySelectorAll('.nl').forEach(n => n.classList.remove('act'));
+  const navEl = document.querySelector(`.nl[data-pg="${pg}"]`);
+  if (navEl) navEl.classList.add('act');
+  document.getElementById('sidebar').classList.remove('open');
+  switch(pg) {
+    case 'dashboard': renderDashboard(); break;
+    case 'ptw-list': renderPTWList(); break;
+    case 'ptw-new': renderPTWForm(); break;
+    case 'ptw-analytics': renderPTWAnalytics(); break;
+    default: renderPlaceholder(pg); break;
+  }
+}
+function viewPTW(id) { renderPTWView(id); }
+
+// ============ DASHBOARD ============
+async function renderDashboard() {
+  document.getElementById('topTitle').textContent = 'Dashboard';
+  document.getElementById('topActs').innerHTML = hasRole('supervisor','admin') ? '<button class="btn btn-p btn-sm" onclick="goTo(\'ptw-new\')">+ NEW PTW</button>' : '';
+  showLoad('Loading PTW data...');
+  const d = await apiFetch('getPTW');
+  allPTW = (d && d.items && d.items.length) ? d.items : DEMO_PTW;
+  hideLoad();
+
+  const total = allPTW.length;
+  const myTasks = allPTW.filter(p => isMyTask(p)).length;
+  const pending = allPTW.filter(p => (p.status||'').startsWith('Pending')).length;
+  const active = allPTW.filter(p => p.status==='Active'||p.status==='Approved').length;
+  const closed = allPTW.filter(p => p.status==='Closed').length;
+
+  document.getElementById('mainContent').innerHTML = `
+    <p style="color:var(--txt2);margin-bottom:14px;font-size:12px">Bosh Engineering Pte. Ltd.</p>
+    <div class="stats-row">
+      <div class="stat cb"><div class="stat-v" data-v="${total}">0</div><div class="stat-l">Total PTWs</div></div>
+      <div class="stat cy"><div class="stat-v" data-v="${myTasks}">0</div><div class="stat-l">⚡ My Tasks</div></div>
+      <div class="stat co"><div class="stat-v" data-v="${pending}">0</div><div class="stat-l">Pending</div></div>
+      <div class="stat cg"><div class="stat-v" data-v="${active}">0</div><div class="stat-l">Active</div></div>
+      <div class="stat cb"><div class="stat-v" data-v="${closed}">0</div><div class="stat-l">Closed</div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <h2 style="font-size:15px;font-weight:700;color:var(--navy)">⚡ My Tasks (${myTasks})</h2>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn btn-p btn-sm" onclick="dashSort='newest';renderDashList()">↓ Newest</button>
+        <button class="btn btn-s btn-sm" onclick="dashSort='oldest';renderDashList()">↑ Oldest</button>
+      </div>
+    </div>
+    <div class="tab-group">
+      <button class="tab-b act" onclick="dashTab='mytasks';setDashTab(this)">⚡ MY TASKS</button>
+      <button class="tab-b" onclick="dashTab='all';setDashTab(this)">ALL</button>
+      <button class="tab-b" onclick="dashTab='pending';setDashTab(this)">PENDING</button>
+      <button class="tab-b" onclick="dashTab='active';setDashTab(this)">ACTIVE</button>
+      <button class="tab-b" onclick="dashTab='closed';setDashTab(this)">CLOSED</button>
+      <button class="tab-b" onclick="dashTab='rejected';setDashTab(this)">REJECTED</button>
+    </div>
+    <div id="dashList"></div>
+  `;
+  initReveal(); initCountUps();
+  renderDashList();
+}
+let dashTab = 'mytasks', dashSort = 'newest';
+function setDashTab(btn) { document.querySelectorAll('.tab-b').forEach(b=>b.classList.remove('act')); btn.classList.add('act'); renderDashList(); }
+function isMyTask(p) {
+  const u = USER.username.toLowerCase(), role = USER.role.toLowerCase();
+  if (p.status==='Pending PIC' && (p.pic||'').toLowerCase()===u) return true;
+  if (p.status==='Pending EHS' && role.includes('safety')) return true;
+  if (p.status==='Pending PM' && role.includes('pm')) return true;
+  if ((p.submittedBy||'').toLowerCase()===u) return true;
+  if (role.includes('admin')) return true;
+  return false;
+}
+function renderDashList() {
+  let list = [...allPTW];
+  if (dashTab==='mytasks') list=list.filter(isMyTask);
+  else if (dashTab==='pending') list=list.filter(p=>(p.status||'').startsWith('Pending'));
+  else if (dashTab==='active') list=list.filter(p=>p.status==='Active'||p.status==='Approved');
+  else if (dashTab==='closed') list=list.filter(p=>p.status==='Closed');
+  else if (dashTab==='rejected') list=list.filter(p=>p.status==='Rejected'||p.status==='Revoked');
+  list.sort((a,b) => dashSort==='newest' ? (b.startDate||'').localeCompare(a.startDate||'') : (a.startDate||'').localeCompare(b.startDate||''));
+  const el = document.getElementById('dashList');
+  if (!list.length) { el.innerHTML = '<div class="empty"><div class="e-icon">✅</div><h3>No pending tasks!</h3><p>You have no pending actions.</p></div>'; return; }
+  el.innerHTML = list.map(p => `<div class="card-box"><div class="cb-row" onclick="viewPTW('${p.id}')">
+    <div><div style="display:flex;align-items:center;gap:8px;margin-bottom:3px"><span style="font-weight:700;color:var(--navy);font-size:14px">${p.id}</span>${badge(p.status)}<span style="font-size:11px;color:var(--txt3)">${p.type}</span></div>
+    <div style="font-size:11px;color:var(--txt2)">${p.location} · ${p.company||''} · ${fDate(p.startDate)}</div></div>
+    <div style="text-align:right;font-size:10px;color:var(--txt3)">By: ${p.submittedBy||'-'}<br>${(p.status||'').startsWith('Pending')?'<span style="color:var(--orange);font-weight:600">Action →</span>':'View →'}</div>
+  </div></div>`).join('');
+}
+
+// ============ PTW LIST ============
+async function renderPTWList() {
+  document.getElementById('topTitle').textContent = 'Permit to Work';
+  document.getElementById('topActs').innerHTML = hasRole('supervisor','admin') ? '<button class="btn btn-p btn-sm" onclick="goTo(\'ptw-new\')">+ NEW PTW</button><button class="btn btn-s btn-sm" onclick="renderPTWList()">↻</button>' : '<button class="btn btn-s btn-sm" onclick="renderPTWList()">↻</button>';
+  showLoad('Loading...');
+  const d = await apiFetch('getPTW');
+  allPTW = (d && d.items && d.items.length) ? d.items : DEMO_PTW;
+  hideLoad();
+  document.getElementById('mainContent').innerHTML = `
+    <div class="filters">
+      <select class="fsel" id="flSt" onchange="flPTW()"><option value="">All Status</option><option>Pending PIC</option><option>Pending EHS</option><option>Pending PM</option><option>Active</option><option>Closed</option><option>Rejected</option><option>Revoked</option><option>Expired</option></select>
+      <select class="fsel" id="flTy" onchange="flPTW()"><option value="">All Types</option><option>Hot Work</option><option>Confined Space</option><option>Electrical</option><option>Excavation</option><option>Working at Height</option><option>General</option></select>
+      <input class="finp" id="flQ" placeholder="Search..." oninput="flPTW()">
+    </div>
+    <div class="tbl-card show"><table class="dt"><thead><tr><th>PTW #</th><th>Type</th><th>Location</th><th>Status</th><th>Date</th><th>By</th><th></th></tr></thead><tbody id="ptwTbl"></tbody></table></div>`;
+  flPTW();
+}
+function flPTW() {
+  const st=document.getElementById('flSt').value, ty=document.getElementById('flTy').value, q=(document.getElementById('flQ').value||'').toLowerCase();
+  const list = allPTW.filter(r=>(!st||r.status===st)&&(!ty||r.type===ty)&&(!q||Object.values(r).some(v=>String(v).toLowerCase().includes(q))));
+  document.getElementById('ptwTbl').innerHTML = list.length ? list.map(p=>`<tr>
+    <td style="font-weight:700;color:var(--navy);cursor:pointer" onclick="viewPTW('${p.id}')">${p.id}</td>
+    <td>${p.type}</td><td>${p.location}</td><td>${badge(p.status)}</td><td>${fDate(p.startDate)}</td><td>${p.submittedBy||'-'}</td>
+    <td><button class="btn btn-s btn-sm" onclick="viewPTW('${p.id}')">View</button></td>
+  </tr>`).join('') : '<tr><td colspan="7"><div class="empty"><h3>No records</h3></div></td></tr>';
+}
+
+// ============ PTW FORM ============
+function renderPTWForm() {
+  document.getElementById('topTitle').textContent = 'New Permit To Work';
+  document.getElementById('topActs').innerHTML = '';
+  workerCount = 0;
+  document.getElementById('mainContent').innerHTML = `
+    <a href="#" onclick="goTo('dashboard');return false" style="font-size:11px;color:var(--txt3)">← Back to Dashboard</a>
+    <h2 style="font-size:18px;font-weight:700;color:var(--navy);margin:10px 0 16px">New Permit To Work</h2>
+    <div class="fsec"><h3><span class="sn">1</span> Permit Details</h3>
+      <div class="fg"><label>Select Project *</label><select class="fi" id="fProj"><option value="">-- Select Project --</option></select></div>
+      <div class="form-row"><div class="fg"><label>Permit Type *</label><select class="fi" id="fType" onchange="loadCL()"><option value="">Select Type</option><option>Hot Work</option><option>Confined Space</option><option>Electrical</option><option>Excavation</option><option>Working at Height</option><option>General</option></select></div>
+      <div class="fg"><label>Location *</label><input class="fi" id="fLoc" placeholder="Zone/Block, Floor Level"></div></div>
+      <div class="form-row"><div class="fg"><label>Valid From *</label><input class="fi" id="fStart" type="datetime-local"></div><div class="fg"><label>Valid To *</label><input class="fi" id="fEnd" type="datetime-local"></div></div>
+      <div class="form-row"><div class="fg"><label>Contact Number</label><input class="fi" id="fContact" placeholder="Mobile number"></div><div class="fg"><label>Description of Work *</label><input class="fi" id="fDesc" placeholder="Brief description"></div></div>
+      <div class="fg"><label>Assign to PIC * <span style="color:var(--red);font-size:10px;font-weight:400">ONLY THIS PERSON CAN VERIFY</span></label><select class="fi" id="fPIC"><option value="">-- Select PIC --</option><option>pic</option><option>admin</option></select></div>
+    </div>
+    <div class="fsec"><h3><span class="sn">2</span> Workers Involved *</h3><div id="wkRows"></div><button class="btn btn-s btn-sm" onclick="addWk()" style="margin-top:6px">+ Add Worker</button></div>
+    <div class="fsec"><h3><span class="sn">3</span> Equipment / Tools *</h3><div class="fg"><textarea class="fi" id="fEquip" placeholder="List all equipment and tools to be used..." rows="3"></textarea></div></div>
+    <div class="fsec"><h3><span class="sn">4</span> General Work Safety Checklist</h3><div class="cl-warn">⚠ All checklist items must be completed before signing</div><div id="clArea"><p style="color:var(--txt3);font-size:12px;text-align:center;padding:16px">Select a Permit Type above to load checklist items...</p></div></div>
+    <div class="fsec"><h3><span class="sn">5</span> Supervisor Declaration & Signature</h3>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:12px;font-size:11px;color:var(--txt2);line-height:1.6">As Supervisor, I possess the required competence to oversee this activity. The Method Statement, Risk Assessment, and Safety Checklists are understood and complied with. Work areas and activities reported in this application are safe to proceed. By utilizing this electronic permit to work system, I acknowledge that my responsibilities and duties remain unaltered.</div>
+      <div class="gps-bar" id="gpsBar" style="background:var(--yellow-bg);color:#B45309;border:1px solid rgba(251,191,36,.2)">📍 GPS: Fetching...</div>
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <button class="btn btn-s btn-sm" onclick="getGPS()">📍 Refresh GPS</button>
+        <button class="btn btn-p btn-sm" onclick="document.getElementById('sigBox').style.display=''">✍ Sign Declaration</button>
+      </div>
+      <div id="sigBox" style="display:none"><div class="fg"><label>Signature</label><div class="sig-pad" id="sigPadDiv"><canvas id="sigCanvas"></canvas><button class="sig-clr" onclick="sigPad&&sigPad.clear()">Clear</button></div></div></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;margin-bottom:30px">
+      <button class="btn btn-s" onclick="goTo('dashboard')">Cancel</button>
+      <button class="btn btn-y btn-block" onclick="submitPTW()" style="font-size:14px;padding:12px">SUBMIT PTW →</button>
+    </div>`;
+  const now = new Date(); document.getElementById('fStart').value = now.toISOString().slice(0,16);
+  document.getElementById('fEnd').value = new Date(now.getTime()+8*3600000).toISOString().slice(0,16);
+  addWk(); getGPS();
+  setTimeout(() => { sigPad = new SigPad('sigCanvas'); }, 300);
+  loadFormOpts();
+}
+async function loadFormOpts() {
+  try { const p = await apiFetch('getProjects'); if (p&&p.items) p.items.forEach(x => { const o=document.createElement('option'); o.value=x.name; o.textContent=x.name; document.getElementById('fProj').appendChild(o); }); } catch(e) {}
+  try { const u = await apiFetch('getUsers',{role:'PIC'}); if (u&&u.items) u.items.forEach(x => { const o=document.createElement('option'); o.value=x.username; o.textContent=x.username; document.getElementById('fPIC').appendChild(o); }); } catch(e) {}
+}
+function addWk() {
+  workerCount++;
+  const div = document.createElement('div'); div.className = 'form-row'; div.style.marginBottom = '6px'; div.id = 'wk-'+workerCount;
+  div.innerHTML = `<div class="fg"><input class="fi wk-n" placeholder="Worker Name"></div><div class="fg" style="display:flex;gap:6px"><input class="fi wk-t" placeholder="Trade / Designation" style="flex:1"><button class="btn btn-d btn-sm" onclick="document.getElementById('wk-${workerCount}').remove()">✕</button></div>`;
+  document.getElementById('wkRows').appendChild(div);
+}
+async function loadCL() {
+  const type = document.getElementById('fType').value;
+  if (!type) { document.getElementById('clArea').innerHTML = '<p style="color:var(--txt3);font-size:12px;text-align:center;padding:16px">Select a Permit Type...</p>'; return; }
+  document.getElementById('clArea').innerHTML = '<p style="text-align:center;padding:16px;color:var(--txt3)">Loading checklist...</p>';
+  let items = null;
+  try { const d = await apiFetch('getChecklist',{type}); if (d&&d.items&&d.items.length) items = d.items; } catch(e) {}
+  if (!items) items = DEMO_CL[type] || DEMO_CL['General'];
+  document.getElementById('clArea').innerHTML = `<table class="cl-tbl"><thead><tr><th>SAFETY CHECK ITEM</th><th style="width:70px">YES</th><th style="width:60px">NO</th><th style="width:50px">N/A</th><th style="width:75px">OTHERS</th></tr></thead><tbody>
+    ${items.map((it,i) => `<tr><td>${it}</td>
+      <td><div class="cl-o"><label><input type="radio" name="cl${i}" value="Yes"><span>YES</span></label></div></td>
+      <td><div class="cl-o"><label><input type="radio" name="cl${i}" value="No"><span>NO</span></label></div></td>
+      <td><div class="cl-o"><label><input type="radio" name="cl${i}" value="N/A"><span>NA</span></label></div></td>
+      <td><div class="cl-o"><label><input type="radio" name="cl${i}" value="Others"><span>OTHERS</span></label></div></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+function getGPS() {
+  const bar = document.getElementById('gpsBar');
+  bar.textContent = '📍 GPS: Fetching...'; bar.style.background = 'var(--yellow-bg)'; bar.style.color = '#B45309';
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      gpsCoords = pos.coords.latitude.toFixed(6)+', '+pos.coords.longitude.toFixed(6);
+      bar.innerHTML = `✅ GPS Ready: ${gpsCoords} (±${Math.round(pos.coords.accuracy)}m) <a href="https://maps.google.com/?q=${gpsCoords}" target="_blank" style="color:var(--red);margin-left:6px">📍 Map</a>`;
+      bar.style.background = 'var(--green-bg)'; bar.style.color = 'var(--green)';
+    }, () => { bar.textContent = '⚠ GPS unavailable'; bar.style.background = 'var(--red-bg)'; bar.style.color = 'var(--red)'; gpsCoords = 'unavailable'; }, {enableHighAccuracy:true,timeout:10000});
+  } else { bar.textContent = '⚠ GPS not supported'; gpsCoords = 'N/A'; }
+}
+async function submitPTW() {
+  const type = document.getElementById('fType').value, loc = document.getElementById('fLoc').value, pic = document.getElementById('fPIC').value;
+  if (!type) { toast('Select a Permit Type','err'); return; }
+  if (!loc) { toast('Enter Location','err'); return; }
+  if (!pic) { toast('Select a PIC','err'); return; }
+  const clRows = document.querySelectorAll('.cl-tbl tbody tr');
+  const checklist = []; let allOk = true;
+  clRows.forEach((tr,i) => { const sel = tr.querySelector(`input[name="cl${i}"]:checked`); if (!sel) allOk = false; checklist.push({item:tr.querySelector('td').textContent, value: sel?sel.value:''}); });
+  if (clRows.length && !allOk) { toast('Complete ALL checklist items before signing','warn'); return; }
+  if (!sigPad || sigPad.isEmpty()) { toast('Please sign the declaration','err'); return; }
+  const workers = []; document.querySelectorAll('#wkRows .form-row').forEach(r => { const n = r.querySelector('.wk-n').value.trim(); const t = r.querySelector('.wk-t').value.trim(); if (n) workers.push(n+(t?' ('+t+')':'')); });
+  showLoad('Submitting PTW...');
+  const r = await apiPost('submitPTW', { type, location:loc, startDate:document.getElementById('fStart').value, endDate:document.getElementById('fEnd').value, project:document.getElementById('fProj').value, pic, contact:document.getElementById('fContact').value, description:document.getElementById('fDesc').value, workers:workers.join(', '), equipment:document.getElementById('fEquip').value, checklist:JSON.stringify(checklist), gps:gpsCoords, signature:sigPad.toDataURL(), submittedBy:USER.username });
+  hideLoad();
+  if (r&&r.success) { toast('PTW submitted! ID: '+(r.id||''),'ok'); setTimeout(()=>goTo('dashboard'),1200); }
+  else toast(r?.error||'Failed — check connection','err');
+}
+
+// ============ PTW VIEW ============
+function renderPTWView(id) {
+  const ptw = allPTW.find(p => p.id === id);
+  if (!ptw) { toast('PTW not found','err'); return; }
+  document.getElementById('topTitle').textContent = ptw.id + ' — ' + ptw.type;
+  document.getElementById('topActs').innerHTML = '<button class="btn btn-s btn-sm" onclick="goTo(\'dashboard\')">← Back</button>';
+  const approvals = (ptw.approvals||'').split('|').filter(Boolean).map(a => { const p=a.split(':'); return {stage:p[0],by:p[1],at:p[2]}; });
+  let cl = []; try { cl = JSON.parse(ptw.checklist||'[]'); } catch(e) {}
+  let acts = '';
+  const st = ptw.status;
+  if (st==='Pending PIC' && (hasRole('pic','admin')||(ptw.pic||'').toLowerCase()===USER.username.toLowerCase())) acts += `<button class="btn btn-g" onclick="doApprove('${id}','PIC')">✓ Approve (PIC)</button> `;
+  if (st==='Pending EHS' && hasRole('safety','admin')) acts += `<button class="btn btn-g" onclick="doApprove('${id}','EHS')">✓ Approve (EHS)</button> `;
+  if (st==='Pending PM' && hasRole('pm','admin')) acts += `<button class="btn btn-g" onclick="doApprove('${id}','PM')">✓ Final Approve</button> `;
+  if (st.startsWith('Pending')) acts += `<button class="btn btn-d" onclick="doReject('${id}')">✕ Reject</button> `;
+  if ((st==='Active'||st==='Approved') && hasRole('pm','admin')) acts += `<button class="btn btn-d" onclick="doRevoke('${id}')">⛔ Revoke</button> `;
+  if ((st==='Active'||st==='Approved') && hasRole('supervisor','admin')) acts += `<button class="btn btn-p" onclick="doClose('${id}')">Close PTW</button> `;
+  acts += `<button class="btn btn-s" onclick="window.open(GAS_URL+'?action=ptwPDF&id=${id}','_blank')">📄 PDF</button>`;
+
+  document.getElementById('mainContent').innerHTML = `
+    <a href="#" onclick="goTo('dashboard');return false" style="font-size:11px;color:var(--txt3)">← Back</a>
+    <div class="fsec" style="margin-top:10px"><h3>📋 Permit Details</h3>
+      <div style="margin-bottom:12px">${badge(ptw.status)} <span style="font-size:12px;color:var(--txt2);margin-left:6px">${ptw.type}</span></div>
+      <div class="form-row"><div class="fg"><label>Project</label><p style="font-weight:500">${ptw.project||'-'}</p></div><div class="fg"><label>Location</label><p style="font-weight:500">${ptw.location}</p></div></div>
+      <div class="form-row"><div class="fg"><label>Valid From</label><p>${fDate(ptw.startDate)}</p></div><div class="fg"><label>Valid To</label><p>${fDate(ptw.endDate)}</p></div></div>
+      <div class="form-row"><div class="fg"><label>Company</label><p>${ptw.company||'-'}</p></div><div class="fg"><label>Workers</label><p>${ptw.workers||'-'}</p></div></div>
+      ${ptw.description?`<div class="fg"><label>Description</label><p>${ptw.description}</p></div>`:''}
+    </div>
+    ${cl.length?`<div class="fsec"><h3>✅ Safety Checklist</h3><table class="cl-tbl"><thead><tr><th>Item</th><th style="width:80px">Response</th></tr></thead><tbody>${cl.map(c=>`<tr><td>${c.item}</td><td style="text-align:center">${c.value==='Yes'?'<span class="badge b-g">YES</span>':c.value==='No'?'<span class="badge b-r">NO</span>':c.value?'<span class="badge b-gr">'+c.value+'</span>':'-'}</td></tr>`).join('')}</tbody></table></div>`:''}
+    <div class="fsec"><h3>📝 Approval Trail</h3>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="text-align:center;padding:10px 16px;background:var(--bg);border-radius:var(--radius);min-width:90px"><div style="font-size:10px;color:var(--txt3);margin-bottom:3px">Submitted</div><div style="font-weight:600;color:var(--navy)">${ptw.submittedBy||'-'}</div></div>
+        ${['PIC','EHS','PM'].map(stage => {
+          const a = approvals.find(x=>x.stage===stage);
+          const isPend = ptw.status === 'Pending '+stage;
+          return `<div style="display:flex;align-items:center;color:var(--txt3)">→</div><div style="text-align:center;padding:10px 16px;background:${a?'var(--green-bg)':isPend?'var(--orange-bg)':'var(--bg)'};border-radius:var(--radius);min-width:90px;border:1px solid ${a?'rgba(16,185,129,.15)':isPend?'rgba(249,115,22,.15)':'var(--border)'}"><div style="font-size:10px;color:var(--txt3);margin-bottom:3px">${stage}</div><div style="font-weight:600;color:${a?'var(--green)':isPend?'var(--orange)':'var(--txt3)'}">${a?'✓ '+a.by:isPend?'⏳ Pending':'—'}</div>${a&&a.at?`<div style="font-size:9px;color:var(--txt3);margin-top:2px">${fDate(a.at)}</div>`:''}</div>`;
+        }).join('')}
+      </div>
+      ${ptw.rejectionReason?`<div style="background:var(--red-bg);border:1px solid rgba(239,68,68,.15);border-radius:var(--radius);padding:10px;color:var(--red);font-size:12px;margin-top:12px"><strong>Rejection Reason:</strong> ${ptw.rejectionReason}</div>`:''}
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:16px">${acts}</div>`;
+}
+async function doApprove(id,stage) { showLoad('Approving...'); await apiPost('approvePTW',{id,stage,approver:USER.username}); hideLoad(); toast('Approved!','ok'); const d=await apiFetch('getPTW'); allPTW=(d&&d.items)?d.items:DEMO_PTW; viewPTW(id); }
+async function doReject(id) { const r=prompt('Rejection reason:'); if(!r)return; showLoad('Rejecting...'); await apiPost('rejectPTW',{id,reason:r,rejectedBy:USER.username}); hideLoad(); toast('Rejected','warn'); const d=await apiFetch('getPTW'); allPTW=(d&&d.items)?d.items:DEMO_PTW; viewPTW(id); }
+async function doRevoke(id) { if(!confirm('⛔ REVOKE? This stops ALL work.'))return; showLoad('Revoking...'); await apiPost('revokePTW',{id,revokedBy:USER.username}); hideLoad(); toast('Revoked','warn'); const d=await apiFetch('getPTW'); allPTW=(d&&d.items)?d.items:DEMO_PTW; viewPTW(id); }
+async function doClose(id) { showLoad('Closing...'); await apiPost('closePTW',{id,closedBy:USER.username}); hideLoad(); toast('PTW Closed','ok'); const d=await apiFetch('getPTW'); allPTW=(d&&d.items)?d.items:DEMO_PTW; viewPTW(id); }
+
+// ============ PTW ANALYTICS ============
+async function renderPTWAnalytics() {
+  document.getElementById('topTitle').textContent = 'PTW Analytics';
+  document.getElementById('topActs').innerHTML = '';
+  showLoad('Loading...'); const d = await apiFetch('getPTW'); allPTW = (d&&d.items&&d.items.length)?d.items:DEMO_PTW; hideLoad();
+  const byType = {}, bySt = {};
+  allPTW.forEach(p => { byType[p.type] = (byType[p.type]||0)+1; bySt[p.status] = (bySt[p.status]||0)+1; });
+  document.getElementById('mainContent').innerHTML = `
+    <div class="hero"><div class="hero-ic" style="background:var(--yellow-bg)">📋</div><div><h2>PTW Analytics</h2><p>Issuance trends, type distribution, and status overview.</p></div></div>
+    <div class="stats-row" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stat cb"><div class="stat-v" data-v="${allPTW.length}">0</div><div class="stat-l">Total</div></div>
+      <div class="stat cg"><div class="stat-v" data-v="${allPTW.filter(p=>p.status==='Active'||p.status==='Approved').length}">0</div><div class="stat-l">Active</div></div>
+      <div class="stat co"><div class="stat-v" data-v="${allPTW.filter(p=>(p.status||'').startsWith('Pending')).length}">0</div><div class="stat-l">Pending</div></div>
+      <div class="stat cr"><div class="stat-v" data-v="${allPTW.filter(p=>p.status==='Rejected'||p.status==='Expired').length}">0</div><div class="stat-l">Rejected/Expired</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="chart-card"><h3>By Type</h3><div class="chart-wrap"><canvas id="chType"></canvas></div></div>
+      <div class="chart-card"><h3>By Status</h3><div class="chart-wrap"><canvas id="chSt"></canvas></div></div>
+    </div>`;
+  initReveal(); initCountUps();
+  const pal = [CC.y.s, CC.r.s, CC.bl.s, CC.p.s, CC.g.s, CC.n.s];
+  new Chart(document.getElementById('chType'),{type:'doughnut',data:{labels:Object.keys(byType),datasets:[{data:Object.values(byType),backgroundColor:pal,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:true,position:'right',labels:{boxWidth:8,padding:8,font:{size:10}}}}}});
+  new Chart(document.getElementById('chSt'),{type:'doughnut',data:{labels:Object.keys(bySt),datasets:[{data:Object.values(bySt),backgroundColor:[CC.g.s,CC.o.s,CC.bl.s,CC.r.s,CC.n.s,CC.p.s],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:true,position:'right',labels:{boxWidth:8,padding:8,font:{size:10}}}}}});
+}
+
+// ============ PLACEHOLDER ============
+function renderPlaceholder(pg) {
+  document.getElementById('topTitle').textContent = pg.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  document.getElementById('topActs').innerHTML = '';
+  document.getElementById('mainContent').innerHTML = `<div class="empty" style="padding:70px"><div class="e-icon">🚧</div><h3>Under Construction</h3><p>This module will be built next.</p><p style="margin-top:10px"><button class="btn btn-p btn-sm" onclick="goTo('dashboard')">← Dashboard</button></p></div>`;
+}
+
+// ============ SIGNATURE PAD ============
+class SigPad {
+  constructor(id) { this.c = document.getElementById(id); if(!this.c)return; this.ctx=this.c.getContext('2d'); this.d=false; this.resize();
+    this.c.addEventListener('mousedown',e=>this.start(e)); this.c.addEventListener('mousemove',e=>this.draw(e)); this.c.addEventListener('mouseup',()=>this.d=false);
+    this.c.addEventListener('touchstart',e=>{e.preventDefault();this.start(e.touches[0])}); this.c.addEventListener('touchmove',e=>{e.preventDefault();this.draw(e.touches[0])}); this.c.addEventListener('touchend',()=>this.d=false);
+    window.addEventListener('resize',()=>this.resize());
+  }
+  resize(){const r=this.c.getBoundingClientRect();this.c.width=r.width;this.c.height=r.height}
+  start(e){this.d=true;const r=this.c.getBoundingClientRect();this.ctx.beginPath();this.ctx.moveTo(e.clientX-r.left,e.clientY-r.top)}
+  draw(e){if(!this.d)return;const r=this.c.getBoundingClientRect();this.ctx.lineTo(e.clientX-r.left,e.clientY-r.top);this.ctx.strokeStyle='#1E3A5F';this.ctx.lineWidth=2;this.ctx.lineCap='round';this.ctx.stroke()}
+  clear(){this.ctx.clearRect(0,0,this.c.width,this.c.height)}
+  toDataURL(){return this.c.toDataURL()}
+  isEmpty(){const d=this.ctx.getImageData(0,0,this.c.width,this.c.height).data;return !d.some((v,i)=>i%4===3&&v>0)}
+}
+
+// ---- BOOT ----
+USER = getUser();
+if (USER) enterApp();
+</script>
+</body>
+</html>
