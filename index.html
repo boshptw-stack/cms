@@ -158,14 +158,6 @@ table.dt tbody tr:hover{background:var(--hover)}
   <div class="fg"><label>Username</label><input class="fi" id="iu" placeholder="Enter username"></div>
   <div class="fg"><label>Password</label><input class="fi" id="ip" type="password" placeholder="Enter password"></div>
   <button class="btn bp bbl" id="lb" onclick="doLogin()">Sign In →</button>
-  <div class="dgrid"><div class="dl">Quick Demo</div>
-    <button class="dbtn" onclick="ql('supervisor','pass123')">supervisor<small>Supervisor</small></button>
-    <button class="dbtn" onclick="ql('pic','pass123')">pic<small>PIC</small></button>
-    <button class="dbtn" onclick="ql('safety','pass123')">safety<small>Safety</small></button>
-    <button class="dbtn" onclick="ql('pm','pass123')">pm<small>PM</small></button>
-    <button class="dbtn" onclick="ql('qaqc','pass123')">qaqc<small>QAQC</small></button>
-    <button class="dbtn" onclick="ql('admin','admin123')">admin<small>Admin</small></button>
-  </div>
 </div></div></div>
 </div>
 
@@ -221,20 +213,44 @@ const DEMO_CL={
 async function aGet(a,p={}){try{const c=new AbortController;const t=setTimeout(()=>c.abort(),8000);const u=new URL(GAS);u.searchParams.set('action',a);Object.entries(p).forEach(([k,v])=>{if(v!==undefined&&v!=='')u.searchParams.set(k,String(v))});const r=await fetch(u,{signal:c.signal});clearTimeout(t);return await r.json()}catch(e){return null}}
 async function aPost(a,d={}){try{const c=new AbortController;const t=setTimeout(()=>c.abort(),15000);const r=await fetch(GAS,{signal:c.signal,method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:a,...d})});clearTimeout(t);return await r.json()}catch(e){return null}}
 
-// Auth
+// Auth — NO demo fallback, only Google Sheet USERS tab
 function gU(){const u=sessionStorage.getItem('cms_user');return u?JSON.parse(u):null}
 function hR(...r){return U&&r.some(x=>U.role.toLowerCase().includes(x.toLowerCase()))}
 function doLogout(){sessionStorage.removeItem('cms_user');U=null;sp('pg-login')}
-function ql(u,p){document.getElementById('iu').value=u;document.getElementById('ip').value=p;doLogin()}
 async function doLogin(){
   const b=document.getElementById('lb'),e=document.getElementById('le');
   const un=document.getElementById('iu').value.trim().toLowerCase(),pw=document.getElementById('ip').value;
   if(!un||!pw)return;b.disabled=true;b.textContent='Signing in...';e.style.display='none';
   let ok=false,rl='';
-  try{const r=await aGet('login',{username:un,password:pw});if(r&&r.success){ok=true;rl=r.role}}catch(x){}
-  if(!ok){const d=DU[un];if(d&&d.pw===pw){ok=true;rl=d.role}}
-  if(ok){U={username:un,role:rl};sessionStorage.setItem('cms_user',JSON.stringify(U));enterApp()}else e.style.display='block';
+  try{const r=await aGet('login',{username:un,password:pw});if(r&&r.success){ok=true;rl=r.role||r.Role||'User'}}catch(x){}
+  if(ok){U={username:un,role:rl};sessionStorage.setItem('cms_user',JSON.stringify(U));enterApp()}else{e.style.display='block'}
   b.disabled=false;b.textContent='Sign In →';
+}
+
+// ---- NORMALIZE PTW data from Google Sheet to internal format ----
+// Sheet: ID, Type, Status, Company, Project, Location, ValidityStart, ValidityEnd, ContactNumber, WorkDescription, Workers, Equipment, Checklist, GPS, Signature, SubmittedBy, Approvals, RejectionReason, PIC
+function normPTW(row){
+  return {
+    id: row.ID||row.id||'',
+    type: row.Type||row.type||'',
+    status: row.Status||row.status||'',
+    company: row.Company||row.company||'',
+    project: row.Project||row.project||'',
+    location: row.Location||row.location||'',
+    startDate: row.ValidityStart||row.startDate||row.validityStart||'',
+    endDate: row.ValidityEnd||row.endDate||row.validityEnd||'',
+    contact: row.ContactNumber||row.contact||row.contactNumber||'',
+    description: row.WorkDescription||row.description||row.workDescription||'',
+    workers: row.Workers||row.workers||'',
+    equipment: row.Equipment||row.equipment||'',
+    checklist: row.Checklist||row.checklist||'[]',
+    gps: row.GPS||row.gps||'',
+    signature: row.Signature||row.signature||'',
+    submittedBy: row.SubmittedBy||row.submittedBy||'',
+    approvals: row.Approvals||row.approvals||'',
+    rejectionReason: row.RejectionReason||row.rejectionReason||'',
+    pic: row.PIC||row.pic||''
+  };
 }
 
 // UI
@@ -276,7 +292,7 @@ async function rDash(){
   document.getElementById('tA').innerHTML=hR('supervisor','admin')?'<button class="btn bp bsm" onclick="go(\'pnew\')">+ NEW PTW</button>':'';
   sL('Loading PTW data...');
   const d=await aGet('getPTW');
-  AP=(d&&d.items&&d.items.length)?d.items:DP;
+  if(d&&d.items&&d.items.length){AP=d.items.map(normPTW)}else{AP=DP}
   hL();
   const tot=AP.length,my=AP.filter(isMyTask).length,pend=AP.filter(p=>(p.status||'').startsWith('Pending')).length,act=AP.filter(p=>p.status==='Active'||p.status==='Approved').length,cls=AP.filter(p=>p.status==='Closed').length;
   document.getElementById('mc').innerHTML=`
@@ -301,7 +317,7 @@ function rDL(){
 async function rPList(){
   document.getElementById('tT').textContent='Permit to Work';
   document.getElementById('tA').innerHTML=(hR('supervisor','admin')?'<button class="btn bp bsm" onclick="go(\'pnew\')">+ NEW PTW</button> ':'')+' <button class="btn bs bsm" onclick="rPList()">↻</button>';
-  sL('Loading...');const d=await aGet('getPTW');AP=(d&&d.items&&d.items.length)?d.items:DP;hL();
+  sL('Loading...');const d=await aGet('getPTW');if(d&&d.items&&d.items.length){AP=d.items.map(normPTW)}else{AP=DP}hL();
   document.getElementById('mc').innerHTML=`<div class="flt"><select class="fsel" id="fs" onchange="fPL()"><option value="">All Status</option><option>Pending PIC</option><option>Pending EHS</option><option>Pending PM</option><option>Active</option><option>Closed</option><option>Rejected</option></select><select class="fsel" id="ft" onchange="fPL()"><option value="">All Types</option><option>Hot Work</option><option>Confined Space</option><option>Electrical</option><option>Excavation</option><option>Working at Height</option><option>General</option></select></div><div class="tc"><table class="dt"><thead><tr><th>PTW #</th><th>Type</th><th>Location</th><th>Status</th><th>Date</th><th>By</th><th></th></tr></thead><tbody id="pT"></tbody></table></div>`;
   fPL();
 }
@@ -461,15 +477,15 @@ function rPView(id){
     </div>
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:14px">${acts}</div>`;
 }
-async function doAp(id,s){sL('Approving...');await aPost('approvePTW',{id,stage:s,approver:U.username});hL();toast('Approved!','ok');const d=await aGet('getPTW');AP=(d&&d.items)?d.items:DP;vPTW(id)}
-async function doRj(id){const r=prompt('Rejection reason:');if(!r)return;sL('Rejecting...');await aPost('rejectPTW',{id,reason:r,rejectedBy:U.username});hL();toast('Rejected','warn');const d=await aGet('getPTW');AP=(d&&d.items)?d.items:DP;vPTW(id)}
-async function doRv(id){if(!confirm('⛔ REVOKE? Stops ALL work.'))return;sL('Revoking...');await aPost('revokePTW',{id,revokedBy:U.username});hL();toast('Revoked','warn');const d=await aGet('getPTW');AP=(d&&d.items)?d.items:DP;vPTW(id)}
-async function doCl(id){sL('Closing...');await aPost('closePTW',{id,closedBy:U.username});hL();toast('Closed','ok');const d=await aGet('getPTW');AP=(d&&d.items)?d.items:DP;vPTW(id)}
+async function doAp(id,s){sL('Approving...');await aPost('approvePTW',{id,stage:s,approver:U.username});hL();toast('Approved!','ok');const d=await aGet('getPTW');AP=(d&&d.items)?d.items.map(normPTW):DP;vPTW(id)}
+async function doRj(id){const r=prompt('Rejection reason:');if(!r)return;sL('Rejecting...');await aPost('rejectPTW',{id,reason:r,rejectedBy:U.username});hL();toast('Rejected','warn');const d=await aGet('getPTW');AP=(d&&d.items)?d.items.map(normPTW):DP;vPTW(id)}
+async function doRv(id){if(!confirm('⛔ REVOKE? Stops ALL work.'))return;sL('Revoking...');await aPost('revokePTW',{id,revokedBy:U.username});hL();toast('Revoked','warn');const d=await aGet('getPTW');AP=(d&&d.items)?d.items.map(normPTW):DP;vPTW(id)}
+async function doCl(id){sL('Closing...');await aPost('closePTW',{id,closedBy:U.username});hL();toast('Closed','ok');const d=await aGet('getPTW');AP=(d&&d.items)?d.items.map(normPTW):DP;vPTW(id)}
 
 // ======== PTW ANALYTICS ========
 async function rPAnalytics(){
   document.getElementById('tT').textContent='PTW Analytics';document.getElementById('tA').innerHTML='';
-  sL('Loading...');const d=await aGet('getPTW');AP=(d&&d.items&&d.items.length)?d.items:DP;hL();
+  sL('Loading...');const d=await aGet('getPTW');if(d&&d.items&&d.items.length){AP=d.items.map(normPTW)}else{AP=DP}hL();
   const byTy={},bySt={};AP.forEach(p=>{byTy[p.type]=(byTy[p.type]||0)+1;bySt[p.status]=(bySt[p.status]||0)+1});
   document.getElementById('mc').innerHTML=`
     <div class="hero2"><div style="width:44px;height:44px;border-radius:11px;background:var(--yelbg);display:flex;align-items:center;justify-content:center;font-size:20px">📋</div><div><h2>PTW Analytics</h2><p>Permit issuance, type distribution, and status overview.</p></div></div>
