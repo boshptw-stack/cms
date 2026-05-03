@@ -346,14 +346,45 @@ function showSig(){
   },100);
 }
 async function ldOpts(){
-  // Projects
+  // Projects — Sheet has: Code, Name, Address, Client, Active
   const sel=document.getElementById('fPj');
-  try{const p=await aGet('getProjects');if(p&&p.items)p.items.forEach(x=>{const o=document.createElement('option');o.value=x.name;o.textContent=x.name;sel.appendChild(o)})}catch(e){}
-  // Add demo projects if dropdown still empty (only has default option)
+  try{
+    const p=await aGet('getProjects');
+    if(p&&p.items&&p.items.length){
+      p.items.forEach(x=>{
+        // Handle any column casing: name, Name, code, Code
+        const nm=x.Name||x.name||x.CODE||x.Code||'';
+        const code=x.Code||x.code||'';
+        const addr=x.Address||x.address||'';
+        const active=x.Active||x.active;
+        if(!nm || active==='FALSE' || active===false)return; // skip empty/inactive
+        const o=document.createElement('option');
+        o.value=code?code+' - '+nm:nm;
+        o.textContent=code?(code+' - '+nm):nm;
+        sel.appendChild(o);
+      });
+    }
+  }catch(e){}
+  // Demo fallback if still empty
   if(sel.options.length<=1)DEMO_PROJ.forEach(x=>{const o=document.createElement('option');o.value=x.name;o.textContent=x.name;sel.appendChild(o)});
-  // PICs
+  // PICs — Sheet USERS has: username, password, role, email
   const ps=document.getElementById('fPI');
-  try{const u=await aGet('getUsers',{role:'PIC'});if(u&&u.items)u.items.forEach(x=>{const o=document.createElement('option');o.value=x.username;o.textContent=x.username+' ('+x.role+')';ps.appendChild(o)})}catch(e){}
+  try{
+    const u=await aGet('getUsers');
+    if(u&&u.items&&u.items.length){
+      u.items.forEach(x=>{
+        const un=x.username||x.Username||x.USERNAME||'';
+        const rl=x.role||x.Role||x.ROLE||'';
+        const em=x.email||x.Email||'';
+        if(!un)return;
+        // Show all users as PIC options (supervisor selects who to assign)
+        const o=document.createElement('option');
+        o.value=un;
+        o.textContent=un+' ('+rl+')'+(em?' — '+em:'');
+        ps.appendChild(o);
+      });
+    }
+  }catch(e){}
   if(ps.options.length<=1)DEMO_PICS.forEach(x=>{const o=document.createElement('option');o.value=x.username;o.textContent=x.username+' ('+x.role+')';ps.appendChild(o)});
 }
 function aWk(){wkC++;const d=document.createElement('div');d.className='fr';d.style.marginBottom='5px';d.id='wk'+wkC;d.innerHTML=`<div class="fg"><input class="fi wn" placeholder="Worker Name"></div><div class="fg" style="display:flex;gap:4px"><input class="fi wt" placeholder="Trade / Designation" style="flex:1"><button class="btn bd bsm" onclick="document.getElementById('wk${wkC}').remove()">✕</button></div>`;document.getElementById('wR').appendChild(d)}
