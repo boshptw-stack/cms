@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Permit to Work — BOSH CMS</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+</head>
+<body>
+<div class="app">
+  <div class="main">
+    <div class="topbar">
+      <h1><button class="mobile-menu" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button> <span id="pageTitle">Permit to Work</span></h1>
+      <div class="topbar-actions" id="topActions"></div>
+    </div>
+    <div class="content">
+      <!-- Back link -->
+      <a href="dashboard.html" style="font-size:12px;color:var(--text-muted);display:inline-flex;align-items:center;gap:4px;margin-bottom:12px">← Back to Dashboard</a>
+
+      <!-- ======== NEW PTW FORM ======== -->
+      <div id="formView" style="display:none">
+        <h2 style="font-size:20px;font-weight:700;color:var(--navy);margin-bottom:20px">New Permit To Work</h2>
+
+        <!-- Section 1: Permit Details -->
+        <div class="form-section">
+          <h3><span class="num">1</span> Permit Details</h3>
+          <div class="form-group">
+            <label>Select Project *</label>
+            <select class="form-input" id="fProject"><option value="">-- Select Project --</option></select>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Permit Type *</label>
+              <select class="form-input" id="fType" onchange="loadChecklist()">
+                <option value="">Select Type</option>
+                <option>Hot Work</option><option>Confined Space</option><option>Electrical</option>
+                <option>Excavation</option><option>Working at Height</option><option>General</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Location *</label><input class="form-input" id="fLocation" placeholder="Zone/Block, Floor Level"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Valid From *</label><input class="form-input" id="fStart" type="datetime-local"></div>
+            <div class="form-group"><label>Valid To *</label><input class="form-input" id="fEnd" type="datetime-local"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Contact Number *</label><input class="form-input" id="fContact" placeholder="Mobile number"></div>
+            <div class="form-group"><label>Description of Work *</label><input class="form-input" id="fDesc" placeholder="Brief description of work"></div>
+          </div>
+          <div class="form-group">
+            <label>Assign to — Person in Charge (PIC) * <span style="color:var(--red);font-size:11px;font-weight:400">ONLY THIS PERSON CAN VERIFY</span></label>
+            <select class="form-input" id="fPIC"><option value="">-- Select PIC --</option></select>
+          </div>
+        </div>
+
+        <!-- Section 2: Workers Involved -->
+        <div class="form-section">
+          <h3><span class="num">2</span> Workers Involved *</h3>
+          <div id="workerRows"></div>
+          <button class="btn btn-secondary btn-sm" onclick="addWorkerRow()" style="margin-top:8px">+ Add Worker</button>
+        </div>
+
+        <!-- Section 3: Equipment / Tools -->
+        <div class="form-section">
+          <h3><span class="num">3</span> Equipment / Tools *</h3>
+          <div class="form-group"><textarea class="form-input" id="fEquipment" placeholder="List all equipment and tools to be used..." rows="3"></textarea></div>
+        </div>
+
+        <!-- Section 4: Safety Checklist (loaded from Google Sheet) -->
+        <div class="form-section">
+          <h3><span class="num">4</span> General Work Safety Checklist</h3>
+          <div class="cl-warning">⚠ All checklist items must be completed before signing</div>
+          <div id="checklistArea">
+            <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px">Select a Permit Type above to load checklist items...</p>
+          </div>
+        </div>
+
+        <!-- Section 5: Supervisor Declaration & Signature -->
+        <div class="form-section">
+          <h3><span class="num">5</span> Supervisor Declaration & Signature</h3>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px;font-size:12px;color:var(--text-sec);line-height:1.6">
+            As Supervisor, I possess the required competence to oversee this activity. The Method Statement, Risk Assessment, and Safety Checklists are understood and complied with. Work areas and activities reported in this application are safe to proceed. By utilizing this electronic permit to work system, I acknowledge that my responsibilities and duties remain unaltered.
+          </div>
+          <div class="gps-bar" id="gpsBar">📍 GPS: Fetching location...</div>
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <button class="btn btn-secondary btn-sm" onclick="refreshGPS()">📍 Refresh GPS</button>
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('sigSection').style.display=''">✍ Sign Declaration</button>
+          </div>
+          <div id="sigSection" style="display:none">
+            <div class="form-group"><label>Signature</label>
+              <div class="sig-pad"><canvas id="sigCanvas"></canvas><button class="sig-clear" onclick="sigPad.clear()">Clear</button></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div style="display:flex;gap:12px;margin-top:20px;margin-bottom:40px">
+          <button class="btn btn-secondary" onclick="location.href='dashboard.html'">Cancel</button>
+          <button class="btn btn-yellow btn-block" onclick="submitPTW()" style="font-size:15px;padding:14px">SUBMIT PTW →</button>
+        </div>
+      </div>
+
+      <!-- ======== VIEW PTW ======== -->
+      <div id="viewView" style="display:none">
+        <div id="viewContent"></div>
+      </div>
+
+      <!-- ======== PTW LIST (fallback) ======== -->
+      <div id="listView" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h2 style="font-size:18px;font-weight:700;color:var(--navy)">All Permits to Work</h2>
+          <button class="btn btn-primary btn-sm" id="listNewBtn" style="display:none" onclick="showForm()">+ NEW PTW</button>
+        </div>
+        <div class="filters">
+          <select class="filter-select" id="fStatusFilter" onchange="filterList()"><option value="">All Status</option><option>Pending PIC</option><option>Pending EHS</option><option>Pending PM</option><option>Approved</option><option>Active</option><option>Closed</option><option>Rejected</option><option>Revoked</option><option>Expired</option></select>
+          <select class="filter-select" id="fTypeFilter" onchange="filterList()"><option value="">All Types</option><option>Hot Work</option><option>Confined Space</option><option>Electrical</option><option>Excavation</option><option>Working at Height</option><option>General</option></select>
+          <input class="search-input" id="fSearchFilter" placeholder="Search..." oninput="filterList()">
+        </div>
+        <div class="table-card show">
+          <table class="dt"><thead><tr><th>PTW #</th><th>Type</th><th>Location</th><th>Status</th><th>Date</th><th>By</th><th></th></tr></thead><tbody id="listTbl"></tbody></table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+if (!initPage('ptw')) throw '';
+const user = Auth.get();
+let allPTW = [], sigPad, gpsCoords = '';
+let workerCount = 0;
+
+// Demo checklist items (fallback when sheet unavailable)
+const DEMO_CHECKLIST = {
+  'Hot Work': ['Workers wearing the required PPE (E.g. safety helmet, safety boots, safety belt / harness and hand gloves, etc)','Safe means of access to work area provided','Material, equipment and work tools were placed at least 1m away from the edges of building','Materials, equipment and work tools were inspected by trade supervisor / Safety Supervisor in-charge and are free of damage /defect','All the electrical tools /equipment were inspected by trade supervisor / Safety Supervisor in-charge & in good condition','Adequate lightings were provided along the access and at the work area','Fire extinguisher available within 5m of hot work','Gas test conducted before work commencement','Fire watch assigned during and 30 min after work','Combustible materials removed or protected','Welding screens/blankets in place','Spark containment measures implemented'],
+  'Confined Space': ['Workers wearing the required PPE','Safe means of access to work area provided','Atmospheric testing conducted (O2, LEL, H2S, CO)','Ventilation equipment in place and operational','Rescue equipment available at entry point','Communication system established','Entry permit displayed at entry point','Standby person assigned','Emergency procedures communicated'],
+  'Electrical': ['Workers wearing the required PPE','Safe means of access to work area provided','Lock Out Tag Out (LOTO) procedures applied','Voltage tested and confirmed zero energy','Insulated tools being used','Circuit identified and isolated','Warning signs posted','Qualified electrician supervising'],
+  'Excavation': ['Workers wearing the required PPE','Safe means of access to work area provided','Underground services located and marked','Shoring/benching in place','Barricades erected around excavation','Ladder access provided','Spoil heap minimum 1m from edge','Water management plan in place'],
+  'Working at Height': ['Workers wearing the required PPE','Safe means of access to work area provided','Material, equipment and work tools were placed at least 1m away from the edges of building','Materials, equipment and work tools were inspected by trade supervisor','All the electrical tools /equipment were inspected and in good condition','Adequate lightings were provided along the access and at the work area','Adequate and secured lifelines with padding against wear and tear were provided','Barricades were erected to prevent fall from height','Torch light provided for the foremen and supervisor in-charge','No incompatible work carried out in the vicinity','Standing supervision by trade Supervisor / Safety Supervisor until work completion','State name of Supervisor / Safety Supervisor assigned to supervise the workers during the night work'],
+  'General': ['Workers wearing the required PPE (E.g. safety helmet, safety boots, safety belt / harness and hand gloves, etc)','Safe means of access to work area provided','Material, equipment and work tools were placed at least 1m away from the edges of building','Materials, equipment and work tools were inspected by trade supervisor / Safety Supervisor in-charge and are free of damage /defect','All the electrical tools /equipment were inspected by trade supervisor / Safety Supervisor in-charge & in good condition','Adequate lightings were provided along the access and at the work area','Adequate and secured lifelines with padding against wear and tear were provided','Barricades were erected to prevent fall from height','Torch light provided for the foremen and supervisor in-charge','No incompatible work carried out in the vicinity','Standing supervision by trade Supervisor / Safety Supervisor until work completion','State name of Supervisor / Safety Supervisor assigned to supervise the workers during the night work — Name of Supervisor / Safety Supervisor:']
+};
+
+const demoPTW = [
+  {id:'PTW-005',type:'Hot Work',location:'Block A L5',status:'Active',startDate:'2026-05-01T08:00',endDate:'2026-05-03T17:00',submittedBy:'supervisor',pic:'pic',company:'ABC Contractors',workers:'Ahmad, Raj',project:'Block A',description:'Welding work',contact:'91234567',equipment:'Welding machine, grinder',checklist:'[]',approvals:''},
+  {id:'PTW-004',type:'Confined Space',location:'Block B B1',status:'Pending PIC',startDate:'2026-04-30T07:00',endDate:'2026-05-01T16:00',submittedBy:'supervisor',pic:'pic',company:'XYZ Pte Ltd',workers:'Lim, Wong',project:'Block B',description:'Tank cleaning',contact:'98765432',equipment:'Blower, gas detector',checklist:'[]',approvals:''},
+  {id:'PTW-003',type:'Electrical',location:'Block C L3',status:'Closed',startDate:'2026-04-28T08:00',endDate:'2026-04-29T17:00',submittedBy:'supervisor',pic:'pic',company:'PowerTech',workers:'Samy, Ravi',project:'Block C',description:'Cable tray',contact:'91112233',equipment:'Cable tray, drill',checklist:'[]',approvals:'PIC:pic:2026-04-28T09:00|EHS:safety:2026-04-28T10:00|PM:pm:2026-04-28T11:00'},
+];
+
+// ---- ROUTING ----
+const params = new URLSearchParams(location.search);
+if (params.get('new') === '1' && Auth.hasRole('supervisor','admin')) {
+  showForm();
+} else if (params.get('id')) {
+  showView(params.get('id'));
+} else {
+  showList();
+}
+
+function showForm() {
+  document.getElementById('formView').style.display = '';
+  document.getElementById('viewView').style.display = 'none';
+  document.getElementById('listView').style.display = 'none';
+  document.getElementById('pageTitle').textContent = 'New Permit To Work';
+  // Set defaults
+  const now = new Date();
+  document.getElementById('fStart').value = now.toISOString().slice(0,16);
+  const end = new Date(now.getTime() + 8*60*60*1000);
+  document.getElementById('fEnd').value = end.toISOString().slice(0,16);
+  addWorkerRow();
+  loadDropdowns();
+  refreshGPS();
+  setTimeout(() => { sigPad = new SignaturePad('sigCanvas'); }, 300);
+}
+
+async function showView(id) {
+  document.getElementById('formView').style.display = 'none';
+  document.getElementById('viewView').style.display = '';
+  document.getElementById('listView').style.display = 'none';
+  showLoad('Loading PTW...');
+  let d = await API.get('getPTW');
+  allPTW = (d && d.items && d.items.length) ? d.items : demoPTW;
+  const ptw = allPTW.find(p => p.id === id);
+  hideLoad();
+  if (!ptw) { document.getElementById('viewContent').innerHTML = '<div class="empty"><h3>PTW not found</h3></div>'; return; }
+  document.getElementById('pageTitle').textContent = ptw.id + ' — ' + ptw.type;
+  renderView(ptw);
+}
+
+function showList() {
+  document.getElementById('formView').style.display = 'none';
+  document.getElementById('viewView').style.display = 'none';
+  document.getElementById('listView').style.display = '';
+  if (Auth.hasRole('supervisor','admin')) document.getElementById('listNewBtn').style.display = '';
+  loadList();
+}
+
+// ---- DROPDOWNS ----
+async function loadDropdowns() {
+  try {
+    const projects = await API.get('getProjects');
+    if (projects && projects.items) {
+      const sel = document.getElementById('fProject');
+      projects.items.forEach(p => { const o = document.createElement('option'); o.value = p.name; o.textContent = p.name; sel.appendChild(o); });
+    }
+  } catch(e) {}
+  try {
+    const users = await API.get('getUsers', { role: 'PIC' });
+    if (users && users.items) {
+      const sel = document.getElementById('fPIC');
+      users.items.forEach(u => { const o = document.createElement('option'); o.value = u.username; o.textContent = u.username + ' (' + u.role + ')'; sel.appendChild(o); });
+    }
+  } catch(e) {
+    // Add demo PICs
+    ['pic','admin'].forEach(u => { const o = document.createElement('option'); o.value = u; o.textContent = u; document.getElementById('fPIC').appendChild(o); });
+  }
+}
+
+// ---- WORKERS ----
+function addWorkerRow() {
+  workerCount++;
+  const div = document.createElement('div');
+  div.className = 'form-row';
+  div.style.marginBottom = '8px';
+  div.id = 'worker-' + workerCount;
+  div.innerHTML = `
+    <div class="form-group"><input class="form-input worker-name" placeholder="Worker Name"></div>
+    <div class="form-group" style="display:flex;gap:8px">
+      <input class="form-input worker-trade" placeholder="Trade / Designation" style="flex:1">
+      <button class="btn btn-danger btn-sm" onclick="document.getElementById('worker-${workerCount}').remove()" style="flex-shrink:0">✕</button>
+    </div>`;
+  document.getElementById('workerRows').appendChild(div);
+}
+
+// ---- CHECKLIST FROM GOOGLE SHEET ----
+async function loadChecklist() {
+  const type = document.getElementById('fType').value;
+  if (!type) {
+    document.getElementById('checklistArea').innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px">Select a Permit Type above to load checklist items...</p>';
+    return;
+  }
+
+  document.getElementById('checklistArea').innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-muted)">Loading checklist...</p>';
+
+  // Try loading from Google Sheet first
+  let items = null;
+  try {
+    const d = await API.get('getChecklist', { type });
+    if (d && d.items && d.items.length) items = d.items;
+  } catch(e) {}
+
+  // Fallback to demo
+  if (!items) items = DEMO_CHECKLIST[type] || DEMO_CHECKLIST['General'];
+
+  renderChecklist(items);
+}
+
+function renderChecklist(items) {
+  document.getElementById('checklistArea').innerHTML = `
+    <table class="checklist-table">
+      <thead><tr><th>SAFETY CHECK ITEM</th><th style="width:80px">YES</th><th style="width:70px">NO</th><th style="width:60px">N/A</th><th style="width:80px">OTHERS</th></tr></thead>
+      <tbody>
+        ${items.map((item, i) => `<tr>
+          <td>${item}</td>
+          <td><div class="cl-opts"><label class="cl-opt"><input type="radio" name="cl${i}" value="Yes"><span>YES</span></label></div></td>
+          <td><div class="cl-opts"><label class="cl-opt"><input type="radio" name="cl${i}" value="No"><span>NO</span></label></div></td>
+          <td><div class="cl-opts"><label class="cl-opt"><input type="radio" name="cl${i}" value="N/A"><span>NA</span></label></div></td>
+          <td><div class="cl-opts"><label class="cl-opt"><input type="radio" name="cl${i}" value="Others"><span>OTHERS</span></label></div></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ---- GPS ----
+function refreshGPS() {
+  const bar = document.getElementById('gpsBar');
+  bar.innerHTML = '📍 GPS: Fetching location...';
+  bar.style.background = 'var(--yellow-bg)';
+  bar.style.color = '#B45309';
+  bar.style.borderColor = 'rgba(251,191,36,.3)';
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        gpsCoords = pos.coords.latitude.toFixed(6) + ', ' + pos.coords.longitude.toFixed(6);
+        bar.innerHTML = `✅ GPS Ready: ${gpsCoords} (±${Math.round(pos.coords.accuracy)}m) <a href="https://maps.google.com/?q=${gpsCoords}" target="_blank" style="color:var(--red);margin-left:8px">📍 Map</a>`;
+        bar.style.background = 'var(--green-bg)';
+        bar.style.color = 'var(--green)';
+        bar.style.borderColor = 'rgba(16,185,129,.3)';
+      },
+      () => { bar.innerHTML = '⚠ GPS unavailable — please enable location'; bar.style.background = 'var(--red-bg)'; bar.style.color = 'var(--red)'; bar.style.borderColor = 'rgba(239,68,68,.3)'; gpsCoords = 'unavailable'; },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  } else { bar.innerHTML = '⚠ GPS not supported'; gpsCoords = 'not supported'; }
+}
+
+// ---- SUBMIT PTW ----
+async function submitPTW() {
+  const type = document.getElementById('fType').value;
+  const location = document.getElementById('fLocation').value;
+  const pic = document.getElementById('fPIC').value;
+  if (!type) { toast('Select a Permit Type', 'err'); return; }
+  if (!location) { toast('Enter a Location', 'err'); return; }
+  if (!pic) { toast('Select a PIC', 'err'); return; }
+
+  // Validate checklist — all items must be answered
+  const clRows = document.querySelectorAll('.checklist-table tbody tr');
+  const checklist = [];
+  let allAnswered = true;
+  clRows.forEach((tr, i) => {
+    const sel = tr.querySelector(`input[name="cl${i}"]:checked`);
+    if (!sel) allAnswered = false;
+    checklist.push({ item: tr.querySelector('td').textContent, value: sel ? sel.value : '' });
+  });
+  if (clRows.length > 0 && !allAnswered) { toast('Please complete ALL checklist items before signing', 'warn'); return; }
+
+  // Validate signature
+  if (!sigPad || sigPad.isEmpty()) { toast('Please sign the declaration', 'err'); return; }
+
+  // Gather workers
+  const workers = [];
+  document.querySelectorAll('#workerRows .form-row').forEach(row => {
+    const name = row.querySelector('.worker-name').value.trim();
+    const trade = row.querySelector('.worker-trade').value.trim();
+    if (name) workers.push(name + (trade ? ' (' + trade + ')' : ''));
+  });
+
+  const data = {
+    type, location,
+    startDate: document.getElementById('fStart').value,
+    endDate: document.getElementById('fEnd').value,
+    project: document.getElementById('fProject').value,
+    pic,
+    contact: document.getElementById('fContact').value,
+    description: document.getElementById('fDesc').value,
+    workers: workers.join(', '),
+    equipment: document.getElementById('fEquipment').value,
+    checklist: JSON.stringify(checklist),
+    gps: gpsCoords,
+    signature: sigPad.toDataURL(),
+    submittedBy: user.username,
+    submittedRole: user.role
+  };
+
+  showLoad('Submitting PTW...');
+  const r = await API.post('submitPTW', data);
+  hideLoad();
+
+  if (r && r.success) {
+    toast('PTW submitted successfully! ID: ' + (r.id || ''), 'ok');
+    setTimeout(() => location.href = 'dashboard.html', 1500);
+  } else {
+    toast(r?.error || 'Submission failed — check your connection', 'err');
+  }
+}
+
+// ---- VIEW PTW ----
+function renderView(ptw) {
+  const approvals = (ptw.approvals || '').split('|').filter(Boolean).map(a => {
+    const parts = a.split(':');
+    return { stage: parts[0], by: parts[1], at: parts[2] };
+  });
+
+  let checklist = [];
+  try { checklist = JSON.parse(ptw.checklist || '[]'); } catch(e) {}
+
+  let actions = '';
+  const st = ptw.status;
+  if (st === 'Pending PIC' && (Auth.hasRole('pic','admin') || (ptw.pic || '').toLowerCase() === user.username.toLowerCase())) {
+    actions += `<button class="btn btn-success" onclick="approvePTW('${ptw.id}','PIC')">✓ Approve as PIC</button>`;
+  }
+  if (st === 'Pending EHS' && Auth.hasRole('safety','admin')) {
+    actions += `<button class="btn btn-success" onclick="approvePTW('${ptw.id}','EHS')">✓ Approve as EHS</button>`;
+  }
+  if (st === 'Pending PM' && Auth.hasRole('pm','admin')) {
+    actions += `<button class="btn btn-success" onclick="approvePTW('${ptw.id}','PM')">✓ Final Approve (PM)</button>`;
+  }
+  if (['Pending PIC','Pending EHS','Pending PM'].includes(st)) {
+    actions += ` <button class="btn btn-danger" onclick="rejectPTW('${ptw.id}')">✕ Reject</button>`;
+  }
+  if ((st === 'Active' || st === 'Approved') && Auth.hasRole('pm','admin')) {
+    actions += ` <button class="btn btn-danger" onclick="revokePTW('${ptw.id}')">⛔ Revoke (Stop Work)</button>`;
+  }
+  if ((st === 'Active' || st === 'Approved') && Auth.hasRole('supervisor','admin')) {
+    actions += ` <button class="btn btn-primary" onclick="closePTW('${ptw.id}')">Close PTW</button>`;
+  }
+  actions += ` <button class="btn btn-secondary" onclick="window.open(CONFIG.GAS_URL+'?action=ptwPDF&id=${ptw.id}','_blank')">📄 PDF</button>`;
+
+  document.getElementById('viewContent').innerHTML = `
+    <div class="form-section">
+      <h3><span class="num">📋</span> Permit Details</h3>
+      <div style="display:flex;gap:8px;margin-bottom:16px">${statusBadge(ptw.status)} <span style="font-size:13px;color:var(--text-sec)">${ptw.type}</span></div>
+      <div class="form-row">
+        <div class="form-group"><label>Project</label><p style="font-size:14px;font-weight:500">${ptw.project || '-'}</p></div>
+        <div class="form-group"><label>Location</label><p style="font-size:14px;font-weight:500">${ptw.location}</p></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Valid From</label><p>${fmtDate(ptw.startDate)}</p></div>
+        <div class="form-group"><label>Valid To</label><p>${fmtDate(ptw.endDate)}</p></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Company</label><p>${ptw.company || '-'}</p></div>
+        <div class="form-group"><label>Contact</label><p>${ptw.contact || '-'}</p></div>
+      </div>
+      <div class="form-group"><label>Description</label><p>${ptw.description || '-'}</p></div>
+      <div class="form-group"><label>Workers</label><p>${ptw.workers || '-'}</p></div>
+      <div class="form-group"><label>Equipment</label><p>${ptw.equipment || '-'}</p></div>
+    </div>
+
+    ${checklist.length ? `<div class="form-section">
+      <h3><span class="num">✅</span> Safety Checklist</h3>
+      <table class="checklist-table"><thead><tr><th>Item</th><th>Response</th></tr></thead><tbody>
+        ${checklist.map(c => `<tr><td>${c.item}</td><td><span class="badge ${c.value==='Yes'?'b-green':c.value==='No'?'b-red':'b-gray'}">${c.value || '-'}</span></td></tr>`).join('')}
+      </tbody></table>
+    </div>` : ''}
+
+    <div class="form-section">
+      <h3><span class="num">📝</span> Approval Trail</h3>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">
+        <div style="text-align:center;padding:12px 20px;background:var(--bg);border-radius:var(--radius);min-width:100px">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Submitted</div>
+          <div style="font-weight:600;color:var(--navy)">${ptw.submittedBy || '-'}</div>
+        </div>
+        ${['PIC','EHS','PM'].map(stage => {
+          const a = approvals.find(x => x.stage === stage);
+          const isPending = ptw.status === 'Pending ' + stage;
+          return `<div style="text-align:center;padding:12px 20px;background:${a ? 'var(--green-bg)' : isPending ? 'var(--orange-bg)' : 'var(--bg)'};border-radius:var(--radius);min-width:100px;border:1px solid ${a ? 'rgba(16,185,129,.2)' : isPending ? 'rgba(249,115,22,.2)' : 'var(--border)'}">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">${stage}</div>
+            <div style="font-weight:600;color:${a ? 'var(--green)' : isPending ? 'var(--orange)' : 'var(--text-muted)'}">${a ? '✓ ' + a.by : isPending ? '⏳ Pending' : '—'}</div>
+            ${a && a.at ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${fmtDate(a.at)}</div>` : ''}
+          </div>`;
+        }).join('<div style="display:flex;align-items:center;color:var(--text-muted)">→</div>')}
+      </div>
+      ${ptw.rejectionReason ? `<div style="background:var(--red-bg);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius);padding:12px;color:var(--red);font-size:13px"><strong>Rejection Reason:</strong> ${ptw.rejectionReason}</div>` : ''}
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:20px;margin-bottom:40px">${actions}</div>
+  `;
+}
+
+async function approvePTW(id, stage) {
+  showLoad('Approving...'); 
+  const r = await API.post('approvePTW', { id, stage, approver: user.username }); 
+  hideLoad();
+  if (r && r.success) { toast('Approved!', 'ok'); showView(id); } 
+  else toast(r?.error || 'Failed', 'err');
+}
+async function rejectPTW(id) {
+  const reason = prompt('Enter rejection reason:');
+  if (!reason) return;
+  showLoad('Rejecting...');
+  const r = await API.post('rejectPTW', { id, reason, rejectedBy: user.username });
+  hideLoad();
+  if (r && r.success) { toast('PTW Rejected', 'warn'); showView(id); } 
+  else toast('Failed', 'err');
+}
+async function revokePTW(id) {
+  if (!confirm('⛔ REVOKE this PTW? This will STOP ALL WORK immediately.')) return;
+  showLoad('Revoking...');
+  const r = await API.post('revokePTW', { id, revokedBy: user.username });
+  hideLoad();
+  if (r && r.success) { toast('PTW Revoked — Work Stopped', 'warn'); showView(id); }
+  else toast('Failed', 'err');
+}
+async function closePTW(id) {
+  if (!confirm('Close this PTW? Work is completed.')) return;
+  showLoad('Closing...');
+  const r = await API.post('closePTW', { id, closedBy: user.username });
+  hideLoad();
+  if (r && r.success) { toast('PTW Closed', 'ok'); showView(id); }
+  else toast('Failed', 'err');
+}
+
+// ---- LIST VIEW ----
+async function loadList() {
+  showLoad('Loading PTW...');
+  let d = await API.get('getPTW');
+  allPTW = (d && d.items && d.items.length) ? d.items : demoPTW;
+  renderList(allPTW);
+  hideLoad();
+}
+
+function renderList(items) {
+  document.getElementById('listTbl').innerHTML = items.length ? items.map(p => `<tr>
+    <td style="font-weight:700;color:var(--navy);cursor:pointer" onclick="location.href='ptw.html?id=${p.id}'">${p.id}</td>
+    <td>${p.type}</td><td>${p.location}</td><td>${statusBadge(p.status)}</td>
+    <td>${fmtDate(p.startDate)}</td><td>${p.submittedBy || '-'}</td>
+    <td><a href="ptw.html?id=${p.id}" class="btn btn-secondary btn-sm">View</a></td>
+  </tr>`).join('') : '<tr><td colspan="7" class="empty"><h3>No PTW records</h3></td></tr>';
+}
+
+function filterList() {
+  const st = document.getElementById('fStatusFilter').value;
+  const ty = document.getElementById('fTypeFilter').value;
+  const q = document.getElementById('fSearchFilter').value.toLowerCase();
+  renderList(allPTW.filter(r => (!st || r.status === st) && (!ty || r.type === ty) && (!q || Object.values(r).some(v => String(v).toLowerCase().includes(q)))));
+}
+</script>
+</body>
+</html>
